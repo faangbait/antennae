@@ -5,6 +5,7 @@
   
   vars:
     docker_credential_pass_url: "https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-pass-v0.6.4-amd64.tar.gz"
+    gpg_id: "root"
 
   tasks:
     - name: Install dnf-plugins-core
@@ -58,17 +59,28 @@
         groups: docker
         append: yes
 
-    - name: Write docker config file
+    - name: Write docker daemon file
       copy:
         content: |
           {
-            "credStore": "pass",
             "userns-remap": "default"
           }
         dest: /etc/docker/daemon.json
         owner: root
         group: docker
         mode: '0660'
+
+    - name: Write docker config file
+      copy:
+        content: |
+          {
+            "credsStore": "pass"
+          }
+        dest: /etc/docker/config.json
+        owner: root
+        group: docker
+        mode: '0660'
+
 
     - name: Install password manager and jq
       package:
@@ -94,4 +106,7 @@
       systemd:
         name: containerd
         enabled: yes
-        state: reloaded
+
+    - name: Initialize pass
+      become: no
+      command: 'pass init {{ gpg_id }}'
