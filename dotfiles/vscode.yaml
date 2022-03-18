@@ -1,0 +1,82 @@
+---
+- name: Install and configure vscode
+  hosts: localhost
+
+  tasks:
+    - name: Install latest vscode rpm
+      become: yes
+      dnf:
+        name: https://code.visualstudio.com/sha/download?build=stable&os=linux-rpm-x64
+        disable_gpg_check: yes
+        state: present
+
+#    - name: Add vscode utility
+#      copy:
+#        content: |
+#          #!/bin/bash
+#          flatpak run com.visualstudio.code $1
+#        dest: /usr/bin/code
+#        mode: '0755'
+
+    - name: Configure vscode settings
+      copy:
+        content: |
+          {
+            "files.autoSave": "onFocusChange",
+            "editor.bracketPairColorization.enabled": true,
+            "editor.guides.bracketPairs": true,
+            "editor.linkedEditing": true,
+            "editor.mouseWheelZoom": true,
+            "editor.acceptSuggestionOnEnter": "off",
+            "files.insertFinalNewline": true,
+            "window.zoomLevel": 1.5,
+            "window.menuBarVisibility": "toggle",
+            "window.restoreFullscreen": true,
+            "debug.console.fontFamily": "'MesloLGS NF'",
+            "terminal.integrated.enableShellIntegration": true,
+            "terminal.integrated.fontFamily": "'MesloLGS NF'",
+            "terminal.integrated.fontSize": 13,
+            "terminal.integrated.minimumContrastRatio": 4.5,
+            "terminal.integrated.allowChords": false,
+            "terminal.integrated.defaultProfile.linux": "zsh",
+            "terminal.external.linuxExec": "wezterm",
+            "git.alwaysSignOff": true,
+            "git.autofetch": true,
+            "git.closeDiffOnOperation": true,
+            "git.enableCommitSigning": true,
+            "git.postCommitCommand": "push",
+            "git.showPushSuccessNotification": true,
+            "git.useCommitInputAsStashMessage": true
+          }
+        dest: '$HOME/.config/Code/User/settings.json'
+    
+    - name: Install vscode extensions
+      command: 'code --install-extension {{ item }}'
+      loop:
+        - redhat.vscode-yaml
+        - redhat.ansible
+        - redhat.vscode-openshift-extension-pack
+        - redhat.fabric8-analytics
+        - formulahendry.code-runner
+        - Equinusocio.vsc-material-theme
+        - Equinusocio.vsc-material-theme-icons
+        - ritwickdey.LiveServer
+        - eamodio.gitlens
+        - mhutchie.git-graph
+        - ms-azuretools.vscode-docker
+        - esbenp.prettier-vscode
+        - ms-python.python
+        - ms-python.pylint
+        - VisualStudioExptTeam.vscodeintellicode
+        - batisteo.vscode-django
+        - mikestead.dotenv
+        - wholroyd.jinja
+        - njpwerner.autodocstring
+        - Trunk.io
+        - IBM.output-colorizer
+        - 4ops.terraform
+
+
+
+
+
