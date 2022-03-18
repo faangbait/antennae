@@ -76,9 +76,7 @@
         - eamodio.gitlens
         - mhutchie.git-graph
         - ms-azuretools.vscode-docker
-        - esbenp.prettier-vscode
         - ms-python.python
-        - ms-python.pylint
         - VisualStudioExptTeam.vscodeintellicode
         - batisteo.vscode-django
         - mikestead.dotenv
