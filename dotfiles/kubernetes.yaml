@@ -1,0 +1,31 @@
+---
+- name: Install kubernetes dev environment
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Get latest version of kubectl
+      command: curl -L -s https://dl.k8s.io/release/stable.txt
+      register: kubectl_version
+    
+    - name: Install kubectl binary
+      get_url:
+        url: 'https://dl.k8s.io/release/{{ kubectl_version.stdout_lines[0] }}/bin/linux/amd64/kubectl'
+        dest: /usr/bin/kubectl
+        mode: '755'
+        group: 'docker'
+        # checksum: 'sha256:https://dl.k8s.io/{{ kubectl_version.stdout_lines[0] }}/bin/linux/amd64/kubectl.sha256'
+    
+    - name: Install kubectl-convert
+      get_url:
+        url: 'https://dl.k8s.io/release/{{ kubectl_version.stdout_lines[0] }}/bin/linux/amd64/kubectl-convert'
+        dest: /usr/bin/kubectl-convert
+        mode: '755'
+        group: 'docker'
+        # checksum: 'sha256:https://dl.k8s.io/{{ kubectl_version.stdout_lines[0] }}/bin/linux/amd64/kubectl-convert.sha256'
+
+    - name: Install minikube
+      get_url:
+        url: 'https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64'
+        dest: /usr/bin/minikube
+        mode: '755'
+        group: 'docker'
