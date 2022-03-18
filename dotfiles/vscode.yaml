@@ -10,6 +10,15 @@
         disable_gpg_check: yes
         state: present
 
+    - name: Install development binaries
+      become: yes
+      get_url:
+        url: '{{ item.url }}'
+        dest: '/usr/bin/{{ item.binary }}'
+        mode: '0755'
+      loop:
+        - { url: 'https://trunk.io/releases/trunk', binary: 'trunk' }
+
     - name: Configure vscode settings
       copy:
         content: |
@@ -38,7 +47,8 @@
             "git.enableCommitSigning": true,
             "git.postCommitCommand": "push",
             "git.showPushSuccessNotification": true,
-            "git.useCommitInputAsStashMessage": true
+            "git.useCommitInputAsStashMessage": true,
+            "trunk.trunkGrayOutNonBlockingIssues": false,
           }
         dest: '$HOME/.config/Code/User/settings.json'
     
