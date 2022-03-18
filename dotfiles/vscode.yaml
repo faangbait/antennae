@@ -10,14 +10,6 @@
         disable_gpg_check: yes
         state: present
 
-#    - name: Add vscode utility
-#      copy:
-#        content: |
-#          #!/bin/bash
-#          flatpak run com.visualstudio.code $1
-#        dest: /usr/bin/code
-#        mode: '0755'
-
     - name: Configure vscode settings
       copy:
         content: |
