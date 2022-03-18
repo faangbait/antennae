@@ -10,6 +10,13 @@
         disable_gpg_check: yes
         state: present
 
+    - name: Install development packages
+      become: yes
+      package:
+        name:
+          - ansible
+          - python3-pytest
+
     - name: Install development binaries
       become: yes
       get_url:
