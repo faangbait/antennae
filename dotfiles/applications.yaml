@@ -1,0 +1,71 @@
+---
+- name: Install critical applications
+  hosts: localhost
+  become: yes
+
+  vars:
+    firefox_extensions:
+      - '3872123' # Adblock Plus
+      - '3910071' # Bitwarden
+
+  tasks:
+    - name: Add Brave repo
+      command: dnf config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/x86_64/
+
+    - name: Add Brave repo key
+      rpm_key:
+        key: https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
+
+    - name: Install the latest version of all applications
+      package:
+        name:
+          - git
+          - nano
+          - gnupg
+          - python3-pip
+          - jq
+          - brave-browser
+          - tmux
+          - keychain
+        state: latest
+
+    - name: Install flatpak remotes
+      community.general.flatpak_remote:
+        name: 'flathub'
+        flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
+
+    - name: Install flatpaks
+      community.general.flatpak:
+        name:
+          - org.gimp.GIMP
+          - org.libreoffice.LibreOffice
+          - org.mozilla.Thunderbird
+          - org.videolan.VLC
+          - com.valvesoftware.Steam
+          - com.visualstudio.code
+          - com.ulduzsoft.Birdtray
+          - us.zoom.Zoom
+          - com.github.tchx84.Flatseal
+        remote: flathub
+
+    - name: Add vscode utility
+      copy:
+        content: |
+          #!/bin/bash
+          flatpak run com.visualstudio.code $1
+        dest: /usr/bin/code
+        mode: '0755'
+        
+# Works fine, but is annoying on repeat runs. Needs an idempotency flag.
+# I use Brave anyhow.
+
+#    - name: Download firefox extensions
+#      get_url:
+#        url: 'https://addons.mozilla.org/firefox/downloads/file/{{ item }}/addon-{{ item }}-latest.xpi'
+#        dest: '/tmp/addon-{{ item }}-latest.xpi'
+#      loop: '{{ firefox_extensions }}'
+
+#    - name: Install firefox extensions
+#      become: no
+#      command: 'firefox /tmp/addon-{{ item }}-latest.xpi'
+#      loop: '{{ firefox_extensions }}'
