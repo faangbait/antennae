@@ -49,6 +49,9 @@
             "git.showPushSuccessNotification": true,
             "git.useCommitInputAsStashMessage": true,
             "trunk.trunkGrayOutNonBlockingIssues": false,
+            "workbench.iconTheme": "eq-material-theme-icons-light",
+            "workbench.colorTheme": "Material Theme Darker High Contrast",
+            "redhat.telemetry.enabled": false
           }
         dest: '$HOME/.config/Code/User/settings.json'
     
