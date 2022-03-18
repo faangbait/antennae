@@ -27,6 +27,7 @@
           - brave-browser
           - tmux
           - keychain
+          - openssl
         state: latest
 
     - name: Install flatpak remotes
