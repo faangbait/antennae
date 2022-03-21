@@ -86,3 +86,8 @@
         - IBM.output-colorizer
         - 4ops.terraform
         - Tim-Koehler.helm-intellisense
+
+    - name: Add vscode-os4 to path
+      lineinfile:
+        line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-0.3.0/out/tools/linux
+        path: '$HOME/.zshrc'
