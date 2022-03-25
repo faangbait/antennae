@@ -46,6 +46,7 @@
           - docker-ce
           - docker-ce-cli
           - containerd.io
+          - skopeo
 
     - name: Create the docker group
       group:

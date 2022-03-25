@@ -1,0 +1,15 @@
+---
+- name: Install OpenShift 4 binaries
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Install from dnf repository
+      dnf:
+        name:
+          - source-to-image
+          - skopeo
+          - origin-clients
+
+
+
