@@ -69,7 +69,7 @@
     lineinfile:
       path: '$HOME/.zshrc'
       regexp: '^plugins='
-      line: 'plugins=(common-aliases aliases universalarchive rsync copyfile dirhistory isodate gpg-agent keychain magic-enter direnv git docker oc helm python virtualenv vscode)'
+      line: 'plugins=(common-aliases aliases universalarchive rsync copyfile dirhistory isodate gpg-agent keychain magic-enter direnv git docker helm python virtualenv vscode)'
 
   - name: Add misc lines to .zshrc
     lineinfile:
@@ -82,8 +82,7 @@
       - "zstyle ':completion:*:*:docker:*' option-stacking yes"
       - "zstyle ':completion:*:*:docker-*:*' option-stacking yes"
       - "setopt prompt_subst"
-      
-
+    
   - name: Add misc lines to top of .zshrc
     lineinfile:
       path: '$HOME/.zshrc'
@@ -104,9 +103,6 @@
         fi
         export VISUAL="$EDITOR"
       path: '$HOME/.zshrc'
-      
-
-  
       
   - name: Install Menlo + Powerline fonts
     get_url:
