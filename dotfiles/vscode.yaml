@@ -37,7 +37,7 @@
             "editor.mouseWheelZoom": true,
             "editor.acceptSuggestionOnEnter": "off",
             "files.insertFinalNewline": true,
-            "window.zoomLevel": 1.5,
+            "window.zoomLevel": 1.25,
             "window.menuBarVisibility": "toggle",
             "window.restoreFullscreen": true,
             "debug.console.fontFamily": "'MesloLGS NF'",
@@ -65,29 +65,33 @@
     - name: Install vscode extensions
       command: 'code --install-extension {{ item }}'
       loop:
-        - redhat.vscode-yaml
-        - redhat.ansible
-        - redhat.vscode-openshift-extension-pack
-        - redhat.fabric8-analytics
-        - formulahendry.code-runner
+        - 4ops.terraform
+        - batisteo.vscode-django
+        - eamodio.gitlens
         - Equinusocio.vsc-material-theme
         - Equinusocio.vsc-material-theme-icons
-        - ritwickdey.LiveServer
-        - eamodio.gitlens
+        - formulahendry.code-runner
+        - IBM.output-colorizer
+        - mads-hartmann.bash-ide-vscode
         - mhutchie.git-graph
+        - mikestead.dotenv
         - ms-azuretools.vscode-docker
         - ms-python.python
-        - VisualStudioExptTeam.vscodeintellicode
-        - batisteo.vscode-django
-        - mikestead.dotenv
-        - wholroyd.jinja
         - njpwerner.autodocstring
+        - redhat.ansible
+        - redhat.fabric8-analytics
+        - redhat.java
+        - redhat.vscode-yaml
+        - redhat.vscode-openshift-extension-pack
+        - redhat.vscode-openshift-java-pack
+        - ritwickdey.LiveServer
         - Trunk.io
-        - IBM.output-colorizer
-        - 4ops.terraform
         - Tim-Koehler.helm-intellisense
+        - VisualStudioExptTeam.vscodeintellicode
+        - wholroyd.jinja
 
     - name: Add vscode-os4 to path
       lineinfile:
-        line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-0.3.0/out/tools/linux
+        line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux
+        regexp: ^export PATH=
         path: '$HOME/.zshrc'
