@@ -121,7 +121,7 @@
       loop:
         - "init.defaultbranch main"
         - "core.excludesfile /var/storage/antennae/.gitignore_global" # TODO: Fix this
-        - "core.editor code --wait"
+        - "core.editor nano"
         - "user.name \"S Smith\""
         - "user.email root@madeof.glass"
         - "user.signingkey 30CC0D4F"
