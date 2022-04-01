@@ -115,3 +115,18 @@
         line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux:$HOME/.crc/bin/oc
         regexp: ^export PATH=
         path: '$HOME/.zshrc'
+
+    - name: Git global configuration
+      command: 'git config --global {{ item }}'
+      loop:
+        - "init.defaultbranch main"
+        - "core.excludesfile /var/storage/antennae/.gitignore_global" # TODO: Fix this
+        - "core.editor code --wait"
+        - "user.name \"S Smith\""
+        - "user.email root@madeof.glass"
+        - "user.signingkey 30CC0D4F"
+        - "commit.gpgsign true"
+        - "gpg.program gpg"
+        - "credential.helper cache"
+        - "commit.template /var/storage/antennae/.gitmessage_global" # TODO: Fix this
+
