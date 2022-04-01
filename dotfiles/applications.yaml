@@ -28,6 +28,8 @@
           - tmux
           - keychain
           - openssl
+          - direnv
+          - terminator
         state: latest
 
     - name: Install flatpak remotes
