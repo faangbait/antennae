@@ -12,6 +12,7 @@
     name:
       - ansible
       - python3-pytest
+      - direnv
 
 - name: Install development binaries
   become: true
@@ -199,3 +200,54 @@
     - { k: "gpg.program", v: "gpg" }
     - { k: "credential.helper", v: "cache" }
     - { k: "commit.template", v: "$HOME/.config/git/.gitmessage_global" }
+
+- name: Create ~/.config/direnv/os4template
+  file:
+    path: '$HOME/.config/direnv/os4template'
+    state: directory
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '751'
+
+- name: Configure direnv
+  copy:
+    dest: '$HOME/.config/direnv/direnv.toml'
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '640'
+    content: |
+      [whitelist]
+      prefix = [ "{{ local_development_root }}" ]
+
+- name: Configure root direnv .envrc
+  copy:
+    dest: '{{ local_development_root }}/.envrc'
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '640'
+    content: |
+      #!/bin/bash -e
+      # SETS: OC_PROJECT OC_REG OC_USER
+      # env_vars_required OC_TOKEN OC_CLUSTER
+
+      oc whoami
+      [[ $? != 0 ]] && oc login https://api.${OC_CLUSTER}:6443 --token="${OC_TOKEN}" || export OC_USER=$(oc whoami)
+
+      export OC_PROJECT=$(oc project -q)
+      [[ "${OC_PROJECT}" == "default" ]] && exit 1
+
+      oc get route default-route -n openshift-image-registry -o jsonpath='{.spec.host}'
+      [[ $? != 0 ]] && export OC_REG="default-route-openshift-image-registry.apps-${OC_CLUSTER}" || export OC_REG=$(oc get route default-route -n openshift-image-registry -o jsonpath='{.spec.host}')
+
+      export OC_PUSHTARGET=${OC_REG}/${OC_PROJECT}
+
+      docker login -u ${OC_USER} -p ${OC_TOKEN} ${OC_REG}
+
+- name: Move os4 templates to $HOME/.config/direnv/os4template
+  copy:
+    src: 'os4template'
+    dest: '$HOME/.config/direnv/os4template'
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '640'
+    directory_mode: '750'
