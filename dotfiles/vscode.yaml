@@ -112,6 +112,6 @@
 
     - name: Add vscode-os4 to path
       lineinfile:
-        line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux
+        line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux:$HOME/.crc/bin/oc
         regexp: ^export PATH=
         path: '$HOME/.zshrc'
