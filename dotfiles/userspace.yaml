@@ -7,7 +7,7 @@
   #   become: yes
   #   get_url:
   #     url: https://github.com/wez/wezterm/releases/download/nightly/WezTerm-nightly-Ubuntu18.04.AppImage
-  #     dest: /usr/bin/wezterm
+  #     dest: /usr/local/bin/wezterm
   #     mode: '0777'
 
   # - name: Install wezterm icon
@@ -54,7 +54,7 @@
     become: yes
     user:
       name: '{{ ansible_user_id }}'
-      shell: '/usr/bin/zsh'
+      shell: '/usr/local/bin/zsh'
 
   - name: Check if Oh My ZSH exists
     stat:

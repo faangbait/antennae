@@ -21,7 +21,7 @@
       become: yes
       get_url:
         url: '{{ item.url }}'
-        dest: '/usr/bin/{{ item.binary }}'
+        dest: '/usr/local/bin/{{ item.binary }}'
         mode: '0755'
       loop:
         - { url: 'https://trunk.io/releases/trunk', binary: 'trunk' }
