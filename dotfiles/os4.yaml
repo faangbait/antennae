@@ -10,5 +10,8 @@
           - source-to-image
           - skopeo
 
-
-
+    - name: Install CodeReady Containers 
+      unarchive:
+        src: https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
+        dest: /usr/local/bin
+        remote_src: yes
