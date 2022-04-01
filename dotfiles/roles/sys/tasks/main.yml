@@ -1,0 +1,170 @@
+---
+- name: Reconfigure fstab
+  ansible.posix.mount:
+    path: '{{ item.dir }}'
+    src: 'UUID={{ item.uuid }}'
+    state: mounted
+    fstype: ext4
+    opts: defaults,rw,acl
+    backup: yes
+  loop: '{{ block_devices }}'
+
+# This works, but this playlist is stored on a data directory, so I can't unmount it...
+# - name: Unmount data directories
+#   ansible.posix.mount:
+#     path: '{{ item.dir }}'
+#     state: unmounted
+#   loop: '{{ block_devices }}'
+#   when: item.type == 'data'
+
+# - name: Ensure data directories exist
+#   ansible.builtin.file:
+#     path: '{{ item.dir }}'
+#     state: directory
+#     mode: '0711'
+#     attributes: '+i'
+#   loop: '{{ block_devices }}'
+#   when: item.type == 'data'
+
+- name: Update fstab for directories
+  ansible.posix.mount:
+    path: '{{ item.dir }}'
+    src: 'UUID={{ item.uuid }}'
+    state: mounted
+    fstype: ext4
+    opts: defaults,rw,acl
+    backup: yes
+  loop: '{{ block_devices }}'
+
+- name: Set data directory ACL
+  ansible.posix.acl:
+    path: '{{ item.dir }}'
+    entity: wheel
+    etype: group
+    permissions: rwx
+    state: present
+  loop: '{{ block_devices }}'
+
+- name: Set data directory default ACL
+  ansible.posix.acl:
+    path: '{{ item.dir }}'
+    entity: wheel
+    etype: group
+    permissions: rwx
+    default: yes
+    state: present
+  loop: '{{ block_devices }}'
+
+- name: Resize tmpfs
+  ansible.posix.mount:
+    path: '{{ item.dir }}'
+    src: tmpfs
+    state: mounted
+    fstype: tmpfs
+    opts: 'size={{ item.size }}'
+    backup: yes
+  loop: '{{ tmpfs_devices }}'
+
+- name: Set swappiness to 1
+  lineinfile:
+    path: /etc/sysctl.d/10-swap.conf
+    create: yes
+    mode: '644'
+    line: vm.swappiness = 1
+    
+- name: Install nmcli
+  package: 
+    name: NetworkManager
+
+- name: Configure nmcli
+  community.general.nmcli:
+    conn_name: 'Wired connection 1'
+    ifname: '{{ network_interface }}'
+    type: ethernet
+    ip4: '{{ static_ip }}/24'
+    gw4: '{{ static_gateway }}'
+    dns4: '{{ static_dns }}'
+    state: present
+
+- name: Install required secrets applications
+  package:
+    name:
+      - gnupg
+      - expect
+    state: present
+
+- name: Wait for gnupg key
+  pause:
+    prompt: Place private.key.gpg in /tmp and press any key
+
+- name: Import private key
+  become: false
+  raw: 'gpg --output - --decrypt /tmp/private.key.gpg | gpg --import -'
+
+- name: Get Key ID
+  become: false
+  pause:
+    prompt: Enter identifier associated with key (email address?)
+  register: gpg_email
+  
+- name: Trust private key
+  become: false
+  raw: 'expect -c "spawn gpg --edit-key {{ gpg_email.user_input }} trust quit; send \"5\ry\r\"; expect eof"'
+
+- name: Remove private.key.gpg
+  become: false
+  file:
+    path: /tmp/private.key.gpg
+    state: absent
+    
+- name: Setup SSH Authentication
+  become: false
+  lineinfile:
+    path: '$HOME/.gnupg/gpg-agent.conf'
+    line: enable-ssh-support
+    create: yes
+    mode: '0600'
+
+- name: Query keygrip
+  become: false
+  command: gpg2 -K --with-keygrip
+  register: gpg_printout
+
+- name: Print keygrip
+  debug:
+    var: gpg_printout.stdout_lines
+    
+- name: Get keygrip
+  pause:
+    prompt: Enter the keygrip for default SSH connections
+  register: gpg_keygrip
+  
+- name: Write Keygrip to sshcontrol
+  become: false
+  lineinfile:
+    path: '$HOME/.gnupg/sshcontrol'
+    line: '{{ gpg_keygrip.user_input }}'
+    create: yes
+    mode: '0600'
+
+- name: Add secrets lines to .bashrc
+  become: false
+  lineinfile:
+    path: '$HOME/.bashrc'
+    line: '{{ item }}'
+    create: yes
+  loop:
+    - 'export GPG_TTY=$(tty)'
+    - 'export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)'
+    - 'gpgconf --launch gpg-agent'
+
+- name: Add secrets lines to .profile (vscode default shell)
+  become: false
+  lineinfile:
+    path: '$HOME/.profile'
+    line: '{{ item }}'
+    create: yes
+  loop:
+    - 'export GPG_TTY=$(tty)'
+    - 'export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)'
+    - 'gpgconf --launch gpg-agent'

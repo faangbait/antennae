@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  roles:
+    - role: sys
+      become: true
+      vars:
+        static_ip: '10.0.0.252'
+        static_gateway: '10.0.0.1'
+        static_dns: 
+          - '10.0.0.1'
+          - '9.9.9.9'
+          - '1.1.1.1'
+        network_interface: 'enp8s0'
+
+        block_devices:
+          - { dir: '/var/storage', uuid: '07fed395-5daa-4800-8b87-b4f888ef3f07', type: 'data' }
+          - { dir: '/var/cache', uuid: 'd6cb375e-85da-49b4-884d-a9bd21d6ebcf', type: 'cache' }
+
+        tmpfs_devices:
+          - { dir: '/tmp', size: '4g'}
+
+    - role: containers
+      become: true
+      vars:
+        docker_credential_pass_url: "https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-pass-v0.6.4-amd64.tar.gz"
+        gpg_id: "root"
+
+    - role: usr
+      become: false
+      vars:
+        firefox_extensions:
+          - '3872123' # Adblock Plus
+          - '3910071' # Bitwarden
+
+    - role: devtools
+      become: false

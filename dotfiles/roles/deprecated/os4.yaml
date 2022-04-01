@@ -1,0 +1,43 @@
+# migrated to role containers
+---
+- name: Install OpenShift 4 binaries
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Install from dnf repository
+      dnf:
+        name:
+          - source-to-image
+          - skopeo
+
+    - name: Fetch CodeReady Containers 
+      unarchive:
+        src: https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
+        dest: /usr/local/bin
+        remote_src: yes
+        extra_opts:
+          - '--strip-components=1'  
+
+    - name: Cleanup CRC Install
+      file:
+        name: /usr/local/bin/LICENSE
+        state: absent
+
+    - name: Create dbuild
+      copy:
+        dest: /usr/local/bin/dbuild
+        attributes: "+x"
+        content: |
+          #!/bin/bash -e
+          if [ -f "${PWD}/Dockerfile" ] && [ "${OC_PROJECT}" != "default" ]; then
+                  [[ ! -z "${OC_BUILDTARGET}" ]] && OC_BUILDTARGET=latest
+                  [[ ! -z "${OC_APPTARGET}" ]] && OC_APPTARGET=$(basename ${PWD} | tr '[:upper:]' '[:lower:]')
+
+                  docker build --pull --compress --tag=${OC_PUSHTARGET}/${OC_APPTARGET}:${OC_BUILDTARGET} .
+                  docker push ${OC_PUSHTARGET}/${OC_APPTARGET}:${OC_BUILDTARGET}
+                  #skopeo copy --dest-creds=${OC_USER}:${OC_TOKEN} $SRC $DEST
+
+          else
+                  echo "No Dockerfile / on default."
+          fi
