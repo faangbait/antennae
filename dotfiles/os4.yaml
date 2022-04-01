@@ -9,7 +9,6 @@
         name:
           - source-to-image
           - skopeo
-          - origin-clients
 
 
 
