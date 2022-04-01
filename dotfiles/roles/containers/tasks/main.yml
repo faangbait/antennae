@@ -175,3 +175,55 @@
       else
               echo "No Dockerfile / on default."
       fi
+
+- name: Create ocnewapp
+  copy:
+    dest: /usr/local/bin/ocnewapp
+    attributes: "+x"
+    content: |
+      #!/bin/bash -e
+      # REQ: OC_APP_BUILDERIMAGE OC_APP_GITREPO OC_APP_BRANCH OC_APP_CONTEXTDIR OC_APP_LABEL
+
+      CMD="oc new-app"
+      FLAGS="--insecure-registry --as-deployment-config --binary=false"
+
+      if [ ! -z "$OC_APP_BUILDERIMAGE" ]; then
+              FLAGS="${FLAGS} --image=${OC_APP_BUILDERIMAGE} --strategy=source"
+      fi
+
+      if [ ! -z "$OC_APP_GITREPO" ]; then
+              CMD="${CMD} --code=${OC_APP_GITREPO}"
+      else
+              CMD="${CMD} ."
+      fi
+
+      if [ ! -z "$OC_APP_BRANCH" ]; then
+              CMD="${CMD}#${OC_APP_BRANCH}"
+      fi
+
+      if [ ! -z "$OC_APP_CONTEXTDIR" ]; then
+              FLAGS="${FLAGS} --context-dir=${OC_APP_CONTEXTDIR}"
+      fi
+
+      if [ ! -z "$OC_APP_LABEL" ]; then
+              FLAGS="${FLAGS} -l app=${OC_APP_LABEL} --name=${OC_APP_LABEL}"
+      fi
+
+      if [ -f ".os4/$OC_APP_LABEL/.buildenv" ]; then
+              FLAGS="${FLAGS} --build-env-file=${PWD}/.os4/${OC_APP_LABEL}/.buildenv"
+      fi
+
+      if [ -f ".os4/$OC_APP_LABEL/.env" ]; then
+              FLAGS="${FLAGS} --env-file=${PWD}/.os4/${OC_APP_LABEL}/.envvars"
+      fi
+
+      if [ -f ".os4/$OC_APP_LABEL/.param" ]; then
+              FLAGS="${FLAGS} --param-file=${PWD}/.os4/${OC_APP_LABEL}/.param"
+      fi
+
+      mkdir -p /tmp/os4
+      ${CMD} ${FLAGS} -o yaml | tee /tmp/os4/app.yaml
+      ${CMD} ${FLAGS}
+      echo ""
+      echo "${CMD} ${FLAGS} sent to /tmp/os4/app.yaml"
+
