@@ -58,10 +58,30 @@
             "trunk.trunkGrayOutNonBlockingIssues": false,
             "workbench.iconTheme": "eq-material-theme-icons-light",
             "workbench.colorTheme": "Material Theme Darker High Contrast",
-            "redhat.telemetry.enabled": false
+            "redhat.telemetry.enabled": false,
+            "extensions.ignoreRecommendations": true
           }
         dest: '$HOME/.config/Code/User/settings.json'
-    
+
+    - name: Configure keybindings
+      copy:
+        content: |
+          [
+              {
+                  "key": "ctrl+shift+alt+s",
+                  "command": "workbench.action.saveWorkspaceAs"
+              },
+              {
+                  "key": "ctrl+d ctrl+b",
+                  "command": "vscode-docker.images.build"
+              },
+              {
+                  "key": "ctrl+d ctrl+p",
+                  "command": "vscode-docker.images.push"
+              }
+          ]
+        dest: '$HOME/.config/Code/User/keybindings.json'
+
     - name: Install vscode extensions
       command: 'code --install-extension {{ item }}'
       loop:
