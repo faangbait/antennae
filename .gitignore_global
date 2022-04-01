@@ -1,5 +1,0 @@
-.env
-.envrc
-.vscode/
-logs
-*.log

@@ -3,6 +3,8 @@
   roles:
     - role: sys
       become: true
+      tags: 
+        - sys
       vars:
         static_ip: '10.0.0.252'
         static_gateway: '10.0.0.1'
@@ -21,12 +23,16 @@
 
     - role: containers
       become: true
+      tags:
+        - containers
       vars:
         docker_credential_pass_url: "https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-pass-v0.6.4-amd64.tar.gz"
         gpg_id: "root"
 
     - role: usr
       become: false
+      tags:
+        - usr
       vars:
         firefox_extensions:
           - '3872123' # Adblock Plus
@@ -34,3 +40,5 @@
 
     - role: devtools
       become: false
+      tags:
+        - devtools

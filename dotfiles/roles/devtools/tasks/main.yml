@@ -22,61 +22,116 @@
   loop:
     - { url: 'https://trunk.io/releases/trunk', binary: 'trunk' }
 
-- name: Configure vscode settings
-  copy:
-    content: |
-      {
-        "files.autoSave": "onFocusChange",
-        "editor.bracketPairColorization.enabled": true,
-        "editor.guides.bracketPairs": true,
-        "editor.linkedEditing": true,
-        "editor.mouseWheelZoom": true,
-        "editor.acceptSuggestionOnEnter": "off",
-        "files.insertFinalNewline": true,
-        "window.zoomLevel": 1.25,
-        "window.menuBarVisibility": "toggle",
-        "window.restoreFullscreen": true,
-        "debug.console.fontFamily": "'MesloLGS NF'",
-        "terminal.integrated.enableShellIntegration": true,
-        "terminal.integrated.fontFamily": "'MesloLGS NF'",
-        "terminal.integrated.fontSize": 13,
-        "terminal.integrated.minimumContrastRatio": 4.5,
-        "terminal.integrated.allowChords": false,
-        "terminal.integrated.defaultProfile.linux": "zsh",
-        "terminal.external.linuxExec": "wezterm",
-        "git.alwaysSignOff": true,
-        "git.autofetch": true,
-        "git.closeDiffOnOperation": true,
-        "git.enableCommitSigning": true,
-        "git.postCommitCommand": "push",
-        "git.showPushSuccessNotification": true,
-        "git.useCommitInputAsStashMessage": true,
-        "trunk.trunkGrayOutNonBlockingIssues": false,
-        "workbench.iconTheme": "eq-material-theme-icons-light",
-        "workbench.colorTheme": "Material Theme Darker High Contrast",
-        "redhat.telemetry.enabled": false,
-        "extensions.ignoreRecommendations": true
-      }
-    dest: '$HOME/.config/Code/User/settings.json'
+# - name: Configure vscode settings
+#   copy:
+#     content: |
+#       {
+#         "files.autoSave": "onFocusChange",
+#         "editor.bracketPairColorization.enabled": true,
+#         "editor.guides.bracketPairs": true,
+#         "editor.linkedEditing": true,
+#         "editor.mouseWheelZoom": true,
+#         "editor.acceptSuggestionOnEnter": "off",
+#         "files.insertFinalNewline": true,
+#         "window.zoomLevel": 1.25,
+#         "window.menuBarVisibility": "toggle",
+#         "window.restoreFullscreen": true,
+#         "debug.console.fontFamily": "'MesloLGS NF'",
+#         "terminal.integrated.enableShellIntegration": true,
+#         "terminal.integrated.fontFamily": "'MesloLGS NF'",
+#         "terminal.integrated.fontSize": 13,
+#         "terminal.integrated.minimumContrastRatio": 4.5,
+#         "terminal.integrated.allowChords": false,
+#         "terminal.integrated.defaultProfile.linux": "zsh",
+#         "terminal.external.linuxExec": "wezterm",
+#         "git.alwaysSignOff": true,
+#         "git.autofetch": true,
+#         "git.closeDiffOnOperation": true,
+#         "git.enableCommitSigning": true,
+#         "git.postCommitCommand": "push",
+#         "git.showPushSuccessNotification": true,
+#         "git.useCommitInputAsStashMessage": true,
+#         "trunk.trunkGrayOutNonBlockingIssues": false,
+#         "workbench.iconTheme": "eq-material-theme-icons-light",
+#         "workbench.colorTheme": "Material Theme Darker High Contrast",
+#         "redhat.telemetry.enabled": false,
+#         "extensions.ignoreRecommendations": true
+#       }
+#     dest: '$HOME/.config/Code/User/settings.json'
 
-- name: Configure keybindings
-  copy:
-    content: |
-      [
-          {
-              "key": "ctrl+shift+alt+s",
-              "command": "workbench.action.saveWorkspaceAs"
-          },
-          {
-              "key": "ctrl+d ctrl+b",
-              "command": "vscode-docker.images.build"
-          },
-          {
-              "key": "ctrl+d ctrl+p",
-              "command": "vscode-docker.images.push"
-          }
-      ]
-    dest: '$HOME/.config/Code/User/keybindings.json'
+- name: Configure vscode settings
+  lineinfile:
+    path: '$HOME/.config/Code/User/settings.json'
+    mode: '755'
+    create: yes
+    backup: yes
+    line: "    \"{{ item.k }}\": {{ item.v }},"
+    regexp: "^    \"{{ item.k }}\": "
+    insertafter: "^{"
+  loop:
+    - { k: files.autoSave, v: "\"onFocusChange\"" }
+    - { k: editor.bracketPairColorization.enabled, v: "true" }
+    - { k: editor.guides.bracketPairs, v: "true" }
+    - { k: editor.linkedEditing, v: "true" }
+    - { k: editor.mouseWheelZoom, v: "true" }
+    - { k: editor.acceptSuggestionOnEnter, v: "\"off\"" }
+    - { k: files.insertFinalNewline, v: "true" }
+    - { k: window.zoomLevel, v: 1.25 }
+    - { k: window.menuBarVisibility, v: "\"toggle\"" }
+    - { k: window.restoreFullscreen, v: "true" }
+    - { k: debug.console.fontFamily, v: "\"'MesloLGS NF'\"" }
+    - { k: terminal.integrated.enableShellIntegration, v: "true" }
+    - { k: terminal.integrated.fontFamily, v: "\"'MesloLGS NF'\"" }
+    - { k: terminal.integrated.fontSize, v: 13 }
+    - { k: terminal.integrated.minimumContrastRatio, v: 4.5 }
+    - { k: terminal.integrated.allowChords, v: "false" }
+    - { k: terminal.integrated.defaultProfile.linux, v: "\"zsh\"" }
+    - { k: terminal.external.linuxExec, v: "\"terminator\"" }
+    - { k: git.alwaysSignOff, v: "true" }
+    - { k: git.autofetch, v: "true" }
+    - { k: git.closeDiffOnOperation, v: "true" }
+    - { k: git.enableCommitSigning, v: "true" }
+    - { k: git.postCommitCommand, v: "\"push\"" }
+    - { k: git.showPushSuccessNotification, v: "true" }
+    - { k: git.useCommitInputAsStashMessage, v: "true" }
+    - { k: workbench.iconTheme, v: "\"eq-material-theme-icons-light\"" }
+    - { k: workbench.colorTheme, v: "\"Material Theme Darker High Contrast\"" }
+    - { k: redhat.telemetry.enabled, v: "false" }
+    - { k: extensions.ignoreRecommendations, v: "true" }
+
+# - name: Configure keybindings
+#   copy:
+#     content: |
+#       [
+#           {
+#               "key": "ctrl+shift+alt+s",
+#               "command": "workbench.action.saveWorkspaceAs"
+#           },
+#           {
+#               "key": "ctrl+d ctrl+b",
+#               "command": "vscode-docker.images.build"
+#           },
+#           {
+#               "key": "ctrl+d ctrl+p",
+#               "command": "vscode-docker.images.push"
+#           }
+#       ]
+#     dest: '$HOME/.config/Code/User/keybindings.json'
+- name: Configure vscode keybindings
+  lineinfile:
+    path: '$HOME/.config/Code/User/keybindings.json'
+    mode: '755'
+    create: yes
+    backup: yes
+    line: "  { \"key\": \"{{ item.key }}\", \"command\": \"{{ item.command }}\" },"
+    insertafter: "^\\["
+    regexp: "{{ item.command }}"
+
+  loop:
+    - { key: "ctrl+shift+alt+s", command: "workbench.action.saveWorkspaceAs" }
+    - { key: "ctrl+d ctrl+b", command: "vscode-docker.images.build" }
+    - { key: "ctrl+d ctrl+p", command: "vscode-docker.images.push" }
+    
 
 - name: Install vscode extensions
   command: 'code --install-extension {{ item }}'
@@ -112,17 +167,35 @@
     regexp: ^export PATH=
     path: '$HOME/.zshrc'
 
-- name: Git global configuration
-  command: 'git config --global {{ item }}'
+- name: Create ~/.config/git
+  file:
+    path: '$HOME/.config/git/'
+    state: directory
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '751'
+    
+- name: Move git templates to /etc/git
+  copy:
+    src: '{{ item }}'
+    dest: '$HOME/.config/git/{{ item }}'
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '640'
   loop:
-    - "init.defaultbranch main"
-    - "core.excludesfile /var/storage/antennae/.gitignore_global" # TODO: Fix this
-    - "core.editor nano"
-    - "user.name \"S Smith\""
-    - "user.email root@madeof.glass"
-    - "user.signingkey 30CC0D4F"
-    - "commit.gpgsign true"
-    - "gpg.program gpg"
-    - "credential.helper cache"
-    - "commit.template /var/storage/antennae/.gitmessage_global" # TODO: Fix this
+    - .gitignore_global
+    - .gitmessage_global
 
+- name: Git global configuration
+  command: "git config --global {{ item.k }} {{ item.v }}"
+  loop:
+    - { k: "init.defaultbranch", v: "main" }
+    - { k: "core.excludesfile", v: "$HOME/.config/git/.gitignore_global" }
+    - { k: "core.editor", v: "nano" }
+    - { k: "user.name", v: "\"S Smith\"" }
+    - { k: "user.email", v: "root@madeof.glass" }
+    - { k: "user.signingkey", v: "30CC0D4F" }
+    - { k: "commit.gpgsign", v: "true" }
+    - { k: "gpg.program", v: "gpg" }
+    - { k: "credential.helper", v: "cache" }
+    - { k: "commit.template", v: "$HOME/.config/git/.gitmessage_global" }
