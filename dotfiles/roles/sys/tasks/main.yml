@@ -1,4 +1,12 @@
 ---
+- name: Install required systems applications
+  package:
+    name:
+      - gnupg
+      - expect
+      - lshw
+    state: present
+
 - name: Reconfigure fstab
   ansible.posix.mount:
     path: '{{ item.dir }}'
@@ -84,13 +92,6 @@
     ip4: '{{ static_ip }}/24'
     gw4: '{{ static_gateway }}'
     dns4: '{{ static_dns }}'
-    state: present
-
-- name: Install required secrets applications
-  package:
-    name:
-      - gnupg
-      - expect
     state: present
 
 - name: Check if gpg key is imported
