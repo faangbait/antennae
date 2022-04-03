@@ -78,3 +78,21 @@
 - name: Config CRC Memory
   become: false
   command: crc config set memory {{ proc_mem.stdout }}
+
+- name: Create OC Package Manager Directory
+  become: true
+  file:
+    path: '/usr/local/oc/{{ item.OC_VERSION }}'
+    state: directory
+  when: item.OC_URL | length > 0
+  loop: '{{ oc_package_manager_dict }}'
+
+- name: Get OC Client
+  become: true
+  unarchive:
+    src: '{{ item.OC_URL }}'
+    remote_src: yes
+    dest: /usr/local/oc/{{ item.OC_VERSION }}
+  when: item.OC_URL | length > 0
+  loop: '{{ oc_package_manager_dict }}'
+
