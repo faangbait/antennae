@@ -1,0 +1,42 @@
+---
+- name: Mount RAMFS
+  become: true
+  ansible.posix.mount:
+    path: /build
+    src: ramfs
+    fstype: ramfs
+    state: mounted
+    opts: rw,noexec,nodev,nosuid
+
+- name: '{{ git_repo }} : Query Latest'
+  uri:
+    url: 'https://api.github.com/repos/{{ git_repo }}/releases/latest'
+    return_content: true
+  register: builder_json
+
+- name: '{{ git_repo }} : Fetch Latest'
+  become: true
+  unarchive:
+    src: "{{ builder_json.json.tarball_url }}"
+    remote_src: true
+    dest: /build
+    extra_opts:
+    - '--strip-components=1'
+
+- name: '{{ git_repo }} : Build Latest'
+  become: true
+  command:
+    chdir: /build
+    cmd: '{{ git_build_cmd }}'
+
+- name: '{{ git_repo }} : Install Latest'
+  become: true
+  command:
+    chdir: /build
+    cmd: '{{ git_install_cmd }}'
+
+- name: Unmount RAMFS
+  become: true
+  ansible.posix.mount:
+    path: /build
+    state: unmounted

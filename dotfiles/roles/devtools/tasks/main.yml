@@ -144,11 +144,13 @@
 
       docker login -u ${OC_USER} -p ${OC_TOKEN} ${OC_REG}
 
-- name: Move os4 templates to $HOME/.config/direnv/os4template
-  copy:
-    src: 'os4template'
-    dest: '$HOME/.config/direnv/os4template'
-    owner: '{{ ansible_user_id }}'
-    group: '{{ ansible_user_id }}'
-    mode: '640'
-    directory_mode: '750'
+- name: Create build mountpoint
+  become: true
+  file:
+    path: /build
+    state: directory
+    owner: root
+    group: wheel
+    mode: '770'
+    attributes: '+i'
+  ignore_errors: true
