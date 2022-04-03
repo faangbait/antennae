@@ -1,7 +1,16 @@
 ---
 - hosts: localhost
   roles:
-    - role: sys
+    - role: 'secrets'
+      become: false
+      tags:
+        - sys
+        - secrets
+      vars:
+        primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
+        primary_ssh_keygrip: 2E5C2C9F1D68FC2827DBD52AC3CBC7A791B84DFD
+
+# Installs builders, sdks, and other development environment stuff
       become: true
       tags: 
         - sys
