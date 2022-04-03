@@ -1,19 +1,4 @@
 ---
-- name: Install latest vscode rpm
-  become: true
-  dnf:
-    name: https://code.visualstudio.com/sha/download?build=stable&os=linux-rpm-x64
-    disable_gpg_check: yes
-    state: present
-
-- name: Install development packages
-  become: true
-  package:
-    name:
-      - ansible
-      - python3-pytest
-      - direnv
-
 - name: Install development binaries
   become: true
   get_url:
@@ -24,100 +9,45 @@
     - { url: 'https://trunk.io/releases/trunk', binary: 'trunk' }
 
 # - name: Configure vscode settings
-#   copy:
-#     content: |
-#       {
-#         "files.autoSave": "onFocusChange",
-#         "editor.bracketPairColorization.enabled": true,
-#         "editor.guides.bracketPairs": true,
-#         "editor.linkedEditing": true,
-#         "editor.mouseWheelZoom": true,
-#         "editor.acceptSuggestionOnEnter": "off",
-#         "files.insertFinalNewline": true,
-#         "window.zoomLevel": 1.25,
-#         "window.menuBarVisibility": "toggle",
-#         "window.restoreFullscreen": true,
-#         "debug.console.fontFamily": "'MesloLGS NF'",
-#         "terminal.integrated.enableShellIntegration": true,
-#         "terminal.integrated.fontFamily": "'MesloLGS NF'",
-#         "terminal.integrated.fontSize": 13,
-#         "terminal.integrated.minimumContrastRatio": 4.5,
-#         "terminal.integrated.allowChords": false,
-#         "terminal.integrated.defaultProfile.linux": "zsh",
-#         "terminal.external.linuxExec": "wezterm",
-#         "git.alwaysSignOff": true,
-#         "git.autofetch": true,
-#         "git.closeDiffOnOperation": true,
-#         "git.enableCommitSigning": true,
-#         "git.postCommitCommand": "push",
-#         "git.showPushSuccessNotification": true,
-#         "git.useCommitInputAsStashMessage": true,
-#         "trunk.trunkGrayOutNonBlockingIssues": false,
-#         "workbench.iconTheme": "eq-material-theme-icons-light",
-#         "workbench.colorTheme": "Material Theme Darker High Contrast",
-#         "redhat.telemetry.enabled": false,
-#         "extensions.ignoreRecommendations": true
-#       }
-#     dest: '$HOME/.config/Code/User/settings.json'
+#   lineinfile:
+#     path: '$HOME/.config/Code/User/settings.json'
+#     mode: '755'
+#     create: yes
+#     backup: yes
+#     line: "    \"{{ item.k }}\": {{ item.v }},"
+#     regexp: "^    \"{{ item.k }}\": "
+#     insertafter: "^{"
+#   loop:
+#     - { k: files.autoSave, v: "\"onFocusChange\"" }
+#     - { k: editor.bracketPairColorization.enabled, v: "true" }
+#     - { k: editor.guides.bracketPairs, v: "true" }
+#     - { k: editor.linkedEditing, v: "true" }
+#     - { k: editor.mouseWheelZoom, v: "true" }
+#     - { k: editor.acceptSuggestionOnEnter, v: "\"off\"" }
+#     - { k: files.insertFinalNewline, v: "true" }
+#     - { k: window.zoomLevel, v: 1.25 }
+#     - { k: window.menuBarVisibility, v: "\"toggle\"" }
+#     - { k: window.restoreFullscreen, v: "true" }
+#     - { k: debug.console.fontFamily, v: "\"'MesloLGS NF'\"" }
+#     - { k: terminal.integrated.enableShellIntegration, v: "true" }
+#     - { k: terminal.integrated.fontFamily, v: "\"'MesloLGS NF'\"" }
+#     - { k: terminal.integrated.fontSize, v: 13 }
+#     - { k: terminal.integrated.minimumContrastRatio, v: 4.5 }
+#     - { k: terminal.integrated.allowChords, v: "false" }
+#     - { k: terminal.integrated.defaultProfile.linux, v: "\"zsh\"" }
+#     - { k: terminal.external.linuxExec, v: "\"terminator\"" }
+#     - { k: git.alwaysSignOff, v: "true" }
+#     - { k: git.autofetch, v: "true" }
+#     - { k: git.closeDiffOnOperation, v: "true" }
+#     - { k: git.enableCommitSigning, v: "true" }
+#     - { k: git.postCommitCommand, v: "\"push\"" }
+#     - { k: git.showPushSuccessNotification, v: "true" }
+#     - { k: git.useCommitInputAsStashMessage, v: "true" }
+#     - { k: workbench.iconTheme, v: "\"eq-material-theme-icons-light\"" }
+#     - { k: workbench.colorTheme, v: "\"Material Theme Darker High Contrast\"" }
+#     - { k: redhat.telemetry.enabled, v: "false" }
+#     - { k: extensions.ignoreRecommendations, v: "true" }
 
-- name: Configure vscode settings
-  lineinfile:
-    path: '$HOME/.config/Code/User/settings.json'
-    mode: '755'
-    create: yes
-    backup: yes
-    line: "    \"{{ item.k }}\": {{ item.v }},"
-    regexp: "^    \"{{ item.k }}\": "
-    insertafter: "^{"
-  loop:
-    - { k: files.autoSave, v: "\"onFocusChange\"" }
-    - { k: editor.bracketPairColorization.enabled, v: "true" }
-    - { k: editor.guides.bracketPairs, v: "true" }
-    - { k: editor.linkedEditing, v: "true" }
-    - { k: editor.mouseWheelZoom, v: "true" }
-    - { k: editor.acceptSuggestionOnEnter, v: "\"off\"" }
-    - { k: files.insertFinalNewline, v: "true" }
-    - { k: window.zoomLevel, v: 1.25 }
-    - { k: window.menuBarVisibility, v: "\"toggle\"" }
-    - { k: window.restoreFullscreen, v: "true" }
-    - { k: debug.console.fontFamily, v: "\"'MesloLGS NF'\"" }
-    - { k: terminal.integrated.enableShellIntegration, v: "true" }
-    - { k: terminal.integrated.fontFamily, v: "\"'MesloLGS NF'\"" }
-    - { k: terminal.integrated.fontSize, v: 13 }
-    - { k: terminal.integrated.minimumContrastRatio, v: 4.5 }
-    - { k: terminal.integrated.allowChords, v: "false" }
-    - { k: terminal.integrated.defaultProfile.linux, v: "\"zsh\"" }
-    - { k: terminal.external.linuxExec, v: "\"terminator\"" }
-    - { k: git.alwaysSignOff, v: "true" }
-    - { k: git.autofetch, v: "true" }
-    - { k: git.closeDiffOnOperation, v: "true" }
-    - { k: git.enableCommitSigning, v: "true" }
-    - { k: git.postCommitCommand, v: "\"push\"" }
-    - { k: git.showPushSuccessNotification, v: "true" }
-    - { k: git.useCommitInputAsStashMessage, v: "true" }
-    - { k: workbench.iconTheme, v: "\"eq-material-theme-icons-light\"" }
-    - { k: workbench.colorTheme, v: "\"Material Theme Darker High Contrast\"" }
-    - { k: redhat.telemetry.enabled, v: "false" }
-    - { k: extensions.ignoreRecommendations, v: "true" }
-
-# - name: Configure keybindings
-#   copy:
-#     content: |
-#       [
-#           {
-#               "key": "ctrl+shift+alt+s",
-#               "command": "workbench.action.saveWorkspaceAs"
-#           },
-#           {
-#               "key": "ctrl+d ctrl+b",
-#               "command": "vscode-docker.images.build"
-#           },
-#           {
-#               "key": "ctrl+d ctrl+p",
-#               "command": "vscode-docker.images.push"
-#           }
-#       ]
-#     dest: '$HOME/.config/Code/User/keybindings.json'
 - name: Configure vscode keybindings
   lineinfile:
     path: '$HOME/.config/Code/User/keybindings.json'
@@ -133,40 +63,11 @@
     - { key: "ctrl+d ctrl+b", command: "vscode-docker.images.build" }
     - { key: "ctrl+d ctrl+p", command: "vscode-docker.images.push" }
     
-
-- name: Install vscode extensions
-  command: 'code --install-extension {{ item }}'
-  loop:
-    - 4ops.terraform
-    - batisteo.vscode-django
-    - eamodio.gitlens
-    - Equinusocio.vsc-material-theme
-    - Equinusocio.vsc-material-theme-icons
-    - formulahendry.code-runner
-    - IBM.output-colorizer
-    - mads-hartmann.bash-ide-vscode
-    - mhutchie.git-graph
-    - mikestead.dotenv
-    - ms-azuretools.vscode-docker
-    - ms-python.python
-    - njpwerner.autodocstring
-    - redhat.ansible
-    - redhat.fabric8-analytics
-    - redhat.java
-    - redhat.vscode-yaml
-    - redhat.vscode-openshift-extension-pack
-    - redhat.vscode-openshift-java-pack
-    - ritwickdey.LiveServer
-    - Trunk.io
-    - Tim-Koehler.helm-intellisense
-    - VisualStudioExptTeam.vscodeintellicode
-    - wholroyd.jinja
-
-- name: Add vscode-os4 to path
-  lineinfile:
-    line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux:$HOME/.crc/bin/oc
-    regexp: ^export PATH=
-    path: '$HOME/.zshrc'
+# - name: Add vscode-os4 to path
+#   lineinfile:
+#     line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux:$HOME/.crc/bin/oc
+#     regexp: ^export PATH=
+#     path: '$HOME/.zshrc'
 
 - name: Create ~/.config/git
   file:
