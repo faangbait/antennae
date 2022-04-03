@@ -31,10 +31,17 @@
         primary_ssh_keygrip: 2E5C2C9F1D68FC2827DBD52AC3CBC7A791B84DFD
 
 # Installs builders, sdks, and other development environment stuff
+    - role: 'gantsign.golang'
       become: true
-      tags: 
+      tags:
+        - devtools
         - sys
+        - golang
       vars:
+        golang_version: '1.18'
+        golang_install_dir: '/usr/local/go'
+        golang_gopath: '$HOME/dev/go'
+
 
 # Sets up a kubernetes+podman+oc pipeline for OpenShift 4; ideal for developers / OS4 Application Delivery specialists
 # Tested on CentOS 8 Stream
@@ -59,12 +66,18 @@
           cgroupDriver: systemd
           fail-swap-on: false
 
-        block_devices:
-          - { dir: '/var/storage', uuid: '07fed395-5daa-4800-8b87-b4f888ef3f07', type: 'data' }
-          - { dir: '/var/cache', uuid: 'd6cb375e-85da-49b4-884d-a9bd21d6ebcf', type: 'cache' }
+    - role: 'geerlingguy.helm'
+      become: true
+      tags:
+        - containers
 
-        tmpfs_devices:
-          - { dir: '/tmp', size: '4g'}
+    - role: 'geerlingguy.pip'
+      become: true
+      tags:
+        - containers
+      vars:
+        pip_install_packages:
+          - kubernetes
 
     - role: containers
       become: true

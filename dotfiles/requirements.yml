@@ -3,3 +3,6 @@
 - src: tvieira.powerline-fonts
 # - src: geerlingguy.docker
 - src: geerlingguy.kubernetes
+- src: geerlingguy.helm
+- src: geerlingguy.pip
+- src: gantsign.golang
