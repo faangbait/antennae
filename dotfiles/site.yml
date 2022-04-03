@@ -26,8 +26,16 @@
       tags:
         - containers
       vars:
-        docker_credential_pass_url: "https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-pass-v0.6.4-amd64.tar.gz"
-        gpg_id: "root"
+    - role: tvieira.powerline-fonts
+      become: true
+      tags:
+        - fonts
+      vars:
+        all_users:
+          - user: ss
+            homedir: /home/ss
+        all_fonts:
+          - SourceCodePro
 
     - role: usr
       become: false
