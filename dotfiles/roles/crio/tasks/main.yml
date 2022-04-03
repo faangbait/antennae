@@ -1,0 +1,28 @@
+---
+
+- name: Install crio repositories
+  yum_repository:
+    name: '{{ item.name }}'
+    description: '{{ item.name }} repository'
+    baseurl: '{{ item.baseurl }}'
+  loop:
+    - { name: 'crio-latest', baseurl: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/'}
+    - { name: 'crio-pinned', baseurl: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.23/CentOS_8_Stream/'}
+
+- name: Install cri-o
+  package:
+    name: cri-o
+
+- name: start cri-o service
+  systemd:
+    name: crio
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+
+- name: modprobe required
+  community.general.modprobe: 
+    name: '{{ item }}'
+  loop:
+    - br_netfilter
+    - overlay

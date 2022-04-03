@@ -6,13 +6,29 @@
       tags: 
         - sys
       vars:
-        static_ip: '10.0.0.252'
-        static_gateway: '10.0.0.1'
-        static_dns: 
-          - '10.0.0.1'
-          - '9.9.9.9'
-          - '1.1.1.1'
-        network_interface: 'enp8s0'
+
+# Sets up a kubernetes+podman+oc pipeline for OpenShift 4; ideal for developers / OS4 Application Delivery specialists
+# Tested on CentOS 8 Stream
+
+    - role: 'crio'
+      become: true
+      tags:
+        - containers
+      vars: 
+        crio_os: CentOS_8_Stream
+        crio_version: 1.23 # Match with kubernetes
+
+    - role: 'geerlingguy.kubernetes'
+      become: true
+      tags:
+        - containers
+      vars:
+        kubernetes_version: 1.23 # Match with crio
+        kubernetes_version_rhel_package: 1.23.5 # Match with crio
+        kubernetes_allow_pods_on_master: true
+        kubernetes_config_kubelet_configuration:
+          cgroupDriver: systemd
+          fail-swap-on: false
 
         block_devices:
           - { dir: '/var/storage', uuid: '07fed395-5daa-4800-8b87-b4f888ef3f07', type: 'data' }
@@ -26,6 +42,9 @@
       tags:
         - containers
       vars:
+        primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
+        crc_version: 1.34.0 # The expected version is defined by the vscode extension -> Add OpenShift Cluster
+
     - role: tvieira.powerline-fonts
       become: true
       tags:

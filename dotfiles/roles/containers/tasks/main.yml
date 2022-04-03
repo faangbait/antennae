@@ -1,115 +1,33 @@
 ---
-- name: Add Docker repository
-#  command: dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-  yum_repository:
-    name: docker-ce
-    description: docker community edition
-    baseurl: https://download.docker.com/linux/fedora/35/x86_64/stable/
-    enabled: yes
-
-- name: Remove docker systemd
-  systemd:
-    name: docker
-    enabled: no
-    state: stopped
-  ignore_errors: true
-
-- name: Remove containerd systemd
-  systemd:
-    name: containerd
-    enabled: no
-    state: stopped
-  ignore_errors: true
-
-- name: Remove Fedora versions of Docker
-  package:
-    name: "{{ item }}"
-    state: absent
-  loop:
-    - docker
-    - docker-common
-    - docker-selinux
-    - docker-engine
-
 - name: Install packages used for containerization
   package:
     name: 
       - dnf-plugins-core #4.1.0
-      - docker-ce #20.10.14
-      - docker-ce-cli
-      - containerd.io #1.5.11
       - skopeo #1.6.0
-      - source-to-image #1.3.1
-      - pass #1.7.4
       - podman #3.4.4
       - jq #1.6
-      - '@virtualization'
     state: present
 
-- name: Start docker systemd
-  systemd:
-    name: docker
-    enabled: yes
-    state: started
+# - name: Install source-to-image
+#   import_role:
+#     name: gitbuilder
+#   vars:
+#     git_repo: 'openshift/source-to-image'
+#     git_build_cmd: ''
+#     git_install_cmd: ''
 
-- name: Start containerd systemd
-  systemd:
-    name: containerd
-    enabled: yes
-    state: started
-
-- name: Create the docker group
-  group:
-    name: docker
-    system: yes
-    state: present
-
-- name: Add user to the docker group
-  user:
-    name: "{{ ansible_user_id }}"
-    groups: docker
-    append: yes
-
-- name: Write docker daemon file
-  copy:
-    content: |
-      {
-        "userns-remap": "default",
-        "insecure-registries" : []
-      }
-    dest: /etc/docker/daemon.json
-    owner: root
-    group: docker
-    mode: '0660'
-
-- name: Write docker config file
-  copy:
-    content: |
-      {
-        "credsStore": "pass"
-      }
-    dest: /etc/docker/config.json
-    owner: root
-    group: docker
-    mode: '0660'
-
-- name: Configure docker-credential-pass
+- name: Get latest pass release
   unarchive:
-    src: '{{ docker_credential_pass_url }}'
-    remote_src: yes
-    dest: /usr/local/bin
-    attributes: '+x'
+    src: https://git.zx2c4.com/password-store/snapshot/password-store-master.tar.xz
+    remote_src: true
+    dest: /tmp
+    creates: /tmp/password-store-master/
 
-- name: Configure Docker to start on boot
-  systemd:
-    name: docker
-    enabled: yes
-    state: reloaded
-
-- name: Configure containerd to start on boot
-  systemd:
-    name: containerd
-    enabled: yes
+- name: Make pass
+  make:
+    chdir: /tmp/password-store-master/
+    target: install
+  become: true
 
 - name: See if pass has been initialized
   become: false
@@ -119,130 +37,122 @@
 
 - name: Initialize pass
   become: false
-  command: 'pass init {{ gpg_id }}'
+  command: 'pass init {{ primary_gpg_keyid }}'
   when: pass_status is failed
 
-- name: Get latest version of kubectl
-#  command: curl -L -s https://dl.k8s.io/release/stable.txt
-  uri:
-    url: https://dl.k8s.io/release/stable.txt
-    return_content: yes
-  register: kubectl_version
+- name: First time running CRC?
+  become: false
+  stat:
+    path: '$HOME/.crc'
+  register: crc_stat    
 
-- name: Install kubectl binary
-  get_url:
-    url: 'https://dl.k8s.io/release/{{ kubectl_version.content }}/bin/linux/amd64/kubectl'
-    dest: /usr/local/bin/kubectl
-    mode: '755'
-    group: 'docker'
-    # checksum: 'sha256:https://dl.k8s.io/{{ kubectl_version.stdout_lines[0] }}/bin/linux/amd64/kubectl.sha256'
+- name: Fetch CodeReady Containers 
+  unarchive:
+    src: 'https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/{{ crc_version }}/crc-linux-amd64.tar.xz'
+    dest: /usr/local/bin
+    remote_src: yes
+    extra_opts:
+      - '--strip-components=1'  
+  when: crc_stat.stat.exists is false
 
-- name: Install kubectl-convert
-  get_url:
-    url: 'https://dl.k8s.io/release/{{ kubectl_version.content }}/bin/linux/amd64/kubectl-convert'
-    dest: /usr/local/bin/kubectl-convert
-    mode: '755'
-    group: 'docker'
-    # checksum: 'sha256:https://dl.k8s.io/{{ kubectl_version.stdout_lines[0] }}/bin/linux/amd64/kubectl-convert.sha256'
+- name: Cleanup CRC Install
+  file:
+    name: /usr/local/bin/LICENSE
+    state: absent
+  when: crc_stat.stat.exists is false
 
-- name: Install minikube
-  get_url:
-    url: 'https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64'
-    dest: /usr/local/bin/minikube
-    mode: '755'
-    group: 'docker'
+- name: Setup CRC
+  become: false
+  expect:
+    command: /usr/local/bin/crc setup
+    responses:
+      'crc config set consent-telemetry': 'N'
+  when: crc_stat.stat.exists is false
 
-- name: Download helm installer
-  get_url:
-    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-    dest: /tmp/get_helm.sh
-    mode: '700'
+- name: Get current threadcount
+  become: true
+  command: grep -c processor /proc/cpuinfo
+  register: proc_threads
+  
+- name: Config CRC CPUs
+  become: false
+  command: crc config set cpus {{ proc_threads.stdout }}
 
-- name: Install helm
-  command: bash /tmp/get_helm.sh
+- name: Get 50% of current max ram
+  become: true
+  raw: "getconf -a | grep PAGES | awk 'BEGIN {total = 1} {if (NR == 1 || NR == 3) total *=$NF} END {print int(total / (1024*1024*2))}'"
+  register: proc_mem
 
-#- name: Fetch CodeReady Containers 
-#  unarchive:
-#    src: https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
-#    dest: /usr/local/bin
-#    group: 'docker'
-#    remote_src: yes
-#    extra_opts:
-#      - '--strip-components=1'  
+- name: Config CRC Memory
+  become: false
+  command: crc config set memory {{ proc_mem.stdout }}
 
-#- name: Cleanup CRC Install
-#  file:
-#    name: /usr/local/bin/LICENSE
-#    state: absent
+# - name: Create dbuild
+#   copy:
+#     dest: /usr/local/bin/dbuild
+#     mode: '755'
+#     content: |
+#       #!/bin/bash -e
+#       if [ -f "${PWD}/Dockerfile" ] && [ "${OC_PROJECT}" != "default" ]; then
+#               [[ ! -z "${OC_BUILDTARGET}" ]] && OC_BUILDTARGET=latest
+#               [[ ! -z "${OC_APPTARGET}" ]] && OC_APPTARGET=$(basename ${PWD} | tr '[:upper:]' '[:lower:]')
 
-- name: Create dbuild
-  copy:
-    dest: /usr/local/bin/dbuild
-    mode: '755'
-    group: 'docker'
-    content: |
-      #!/bin/bash -e
-      if [ -f "${PWD}/Dockerfile" ] && [ "${OC_PROJECT}" != "default" ]; then
-              [[ ! -z "${OC_BUILDTARGET}" ]] && OC_BUILDTARGET=latest
-              [[ ! -z "${OC_APPTARGET}" ]] && OC_APPTARGET=$(basename ${PWD} | tr '[:upper:]' '[:lower:]')
+#               docker build --pull --compress --tag=${OC_PUSHTARGET}/${OC_APPTARGET}:${OC_BUILDTARGET} .
+#               docker push ${OC_PUSHTARGET}/${OC_APPTARGET}:${OC_BUILDTARGET}
+#               #skopeo copy --dest-creds=${OC_USER}:${OC_TOKEN} $SRC $DEST
 
-              docker build --pull --compress --tag=${OC_PUSHTARGET}/${OC_APPTARGET}:${OC_BUILDTARGET} .
-              docker push ${OC_PUSHTARGET}/${OC_APPTARGET}:${OC_BUILDTARGET}
-              #skopeo copy --dest-creds=${OC_USER}:${OC_TOKEN} $SRC $DEST
+#       else
+#               echo "No Dockerfile / on default."
+#       fi
 
-      else
-              echo "No Dockerfile / on default."
-      fi
+# - name: Create ocnewapp
+#   copy:
+#     dest: /usr/local/bin/ocnewapp
+#     mode: '755'
+#     content: |
+#       #!/bin/bash -e
+#       # REQ: OC_APP_BUILDERIMAGE OC_APP_GITREPO OC_APP_BRANCH OC_APP_CONTEXTDIR OC_APP_LABEL
 
-- name: Create ocnewapp
-  copy:
-    dest: /usr/local/bin/ocnewapp
-    mode: '755'
-    group: 'docker'
-    content: |
-      #!/bin/bash -e
-      # REQ: OC_APP_BUILDERIMAGE OC_APP_GITREPO OC_APP_BRANCH OC_APP_CONTEXTDIR OC_APP_LABEL
+#       CMD="oc new-app"
+#       FLAGS="--insecure-registry --as-deployment-config --binary=false"
 
-      CMD="oc new-app"
-      FLAGS="--insecure-registry --as-deployment-config --binary=false"
+#       if [ ! -z "$OC_APP_BUILDERIMAGE" ]; then
+#               FLAGS="${FLAGS} --image=${OC_APP_BUILDERIMAGE} --strategy=source"
+#       fi
 
-      if [ ! -z "$OC_APP_BUILDERIMAGE" ]; then
-              FLAGS="${FLAGS} --image=${OC_APP_BUILDERIMAGE} --strategy=source"
-      fi
+#       if [ ! -z "$OC_APP_GITREPO" ]; then
+#               CMD="${CMD} --code=${OC_APP_GITREPO}"
+#       else
+#               CMD="${CMD} ."
+#       fi
 
-      if [ ! -z "$OC_APP_GITREPO" ]; then
-              CMD="${CMD} --code=${OC_APP_GITREPO}"
-      else
-              CMD="${CMD} ."
-      fi
+#       if [ ! -z "$OC_APP_BRANCH" ]; then
+#               CMD="${CMD}#${OC_APP_BRANCH}"
+#       fi
 
-      if [ ! -z "$OC_APP_BRANCH" ]; then
-              CMD="${CMD}#${OC_APP_BRANCH}"
-      fi
+#       if [ ! -z "$OC_APP_CONTEXTDIR" ]; then
+#               FLAGS="${FLAGS} --context-dir=${OC_APP_CONTEXTDIR}"
+#       fi
 
-      if [ ! -z "$OC_APP_CONTEXTDIR" ]; then
-              FLAGS="${FLAGS} --context-dir=${OC_APP_CONTEXTDIR}"
-      fi
+#       if [ ! -z "$OC_APP_LABEL" ]; then
+#               FLAGS="${FLAGS} -l app=${OC_APP_LABEL} --name=${OC_APP_LABEL}"
+#       fi
 
-      if [ ! -z "$OC_APP_LABEL" ]; then
-              FLAGS="${FLAGS} -l app=${OC_APP_LABEL} --name=${OC_APP_LABEL}"
-      fi
+#       if [ -f ".os4/$OC_APP_LABEL/.buildenv" ]; then
+#               FLAGS="${FLAGS} --build-env-file=${PWD}/.os4/${OC_APP_LABEL}/.buildenv"
+#       fi
 
-      if [ -f ".os4/$OC_APP_LABEL/.buildenv" ]; then
-              FLAGS="${FLAGS} --build-env-file=${PWD}/.os4/${OC_APP_LABEL}/.buildenv"
-      fi
+#       if [ -f ".os4/$OC_APP_LABEL/.env" ]; then
+#               FLAGS="${FLAGS} --env-file=${PWD}/.os4/${OC_APP_LABEL}/.envvars"
+#       fi
 
-      if [ -f ".os4/$OC_APP_LABEL/.env" ]; then
-              FLAGS="${FLAGS} --env-file=${PWD}/.os4/${OC_APP_LABEL}/.envvars"
-      fi
+#       if [ -f ".os4/$OC_APP_LABEL/.param" ]; then
+#               FLAGS="${FLAGS} --param-file=${PWD}/.os4/${OC_APP_LABEL}/.param"
+#       fi
 
-      if [ -f ".os4/$OC_APP_LABEL/.param" ]; then
-              FLAGS="${FLAGS} --param-file=${PWD}/.os4/${OC_APP_LABEL}/.param"
-      fi
-
-      mkdir -p /tmp/os4
-      ${CMD} ${FLAGS} -o yaml | tee /tmp/os4/app.yaml
-      ${CMD} ${FLAGS}
-      echo ""
-      echo "${CMD} ${FLAGS} sent to /tmp/os4/app.yaml"
+#       mkdir -p /tmp/os4
+#       ${CMD} ${FLAGS} -o yaml | tee /tmp/os4/app.yaml
+#       ${CMD} ${FLAGS}
+#       echo ""
+#       echo "${CMD} ${FLAGS} sent to /tmp/os4/app.yaml"
 
