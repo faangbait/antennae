@@ -1,7 +1,6 @@
 ---
 - src: gantsign.visual-studio-code
 - src: tvieira.powerline-fonts
-# - src: geerlingguy.docker
 - src: geerlingguy.kubernetes
 - src: geerlingguy.helm
 - src: geerlingguy.pip

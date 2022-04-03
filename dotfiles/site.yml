@@ -1,26 +1,8 @@
 ---
 - hosts: localhost
   roles:
-#    - role: sys
-#      become: true
-#      tags: 
-#        - sys
-#      vars:
-#        static_ip: '10.0.0.252'
-#        static_gateway: '10.0.0.1'
-#        static_dns: 
-#          - '10.0.0.1'
-#          - '9.9.9.9'
-#          - '1.1.1.1'
-#        network_interface: 'enp8s0'
 
-#        block_devices:
-#          - { dir: '/var/storage', uuid: '07fed395-5daa-4800-8b87-b4f888ef3f07', type: 'data' }
-#          - { dir: '/var/cache', uuid: 'd6cb375e-85da-49b4-884d-a9bd21d6ebcf', type: 'cache' }
-
-#        tmpfs_devices:
-#          - { dir: '/tmp', size: '4g'}
-
+# Securely decrypts and installs a GnuPG key stored openly in a public repo
     - role: 'secrets'
       become: false
       tags:
@@ -87,6 +69,8 @@
         primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
         crc_version: 1.34.0 # The expected version is defined by the vscode extension -> Add OpenShift Cluster
 
+# Builds and configures userspace tools
+
     - role: tvieira.powerline-fonts
       become: true
       tags:
@@ -113,8 +97,7 @@
         - devtools
       vars:
         local_development_root: '/var/storage/sdg/openshift'
-
-   
+  
     - role: gantsign.visual-studio-code
       become: true
       tags:
@@ -237,7 +220,5 @@
             "workbench.editor.scrollToSwitchTabs": true,
             "workbench.editor.wrapTabs": true,
             "window.autoDetectHighContrast": false,
-
-
           }
 

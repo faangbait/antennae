@@ -8,46 +8,6 @@
   loop:
     - { url: 'https://trunk.io/releases/trunk', binary: 'trunk' }
 
-# - name: Configure vscode settings
-#   lineinfile:
-#     path: '$HOME/.config/Code/User/settings.json'
-#     mode: '755'
-#     create: yes
-#     backup: yes
-#     line: "    \"{{ item.k }}\": {{ item.v }},"
-#     regexp: "^    \"{{ item.k }}\": "
-#     insertafter: "^{"
-#   loop:
-#     - { k: files.autoSave, v: "\"onFocusChange\"" }
-#     - { k: editor.bracketPairColorization.enabled, v: "true" }
-#     - { k: editor.guides.bracketPairs, v: "true" }
-#     - { k: editor.linkedEditing, v: "true" }
-#     - { k: editor.mouseWheelZoom, v: "true" }
-#     - { k: editor.acceptSuggestionOnEnter, v: "\"off\"" }
-#     - { k: files.insertFinalNewline, v: "true" }
-#     - { k: window.zoomLevel, v: 1.25 }
-#     - { k: window.menuBarVisibility, v: "\"toggle\"" }
-#     - { k: window.restoreFullscreen, v: "true" }
-#     - { k: debug.console.fontFamily, v: "\"'MesloLGS NF'\"" }
-#     - { k: terminal.integrated.enableShellIntegration, v: "true" }
-#     - { k: terminal.integrated.fontFamily, v: "\"'MesloLGS NF'\"" }
-#     - { k: terminal.integrated.fontSize, v: 13 }
-#     - { k: terminal.integrated.minimumContrastRatio, v: 4.5 }
-#     - { k: terminal.integrated.allowChords, v: "false" }
-#     - { k: terminal.integrated.defaultProfile.linux, v: "\"zsh\"" }
-#     - { k: terminal.external.linuxExec, v: "\"terminator\"" }
-#     - { k: git.alwaysSignOff, v: "true" }
-#     - { k: git.autofetch, v: "true" }
-#     - { k: git.closeDiffOnOperation, v: "true" }
-#     - { k: git.enableCommitSigning, v: "true" }
-#     - { k: git.postCommitCommand, v: "\"push\"" }
-#     - { k: git.showPushSuccessNotification, v: "true" }
-#     - { k: git.useCommitInputAsStashMessage, v: "true" }
-#     - { k: workbench.iconTheme, v: "\"eq-material-theme-icons-light\"" }
-#     - { k: workbench.colorTheme, v: "\"Material Theme Darker High Contrast\"" }
-#     - { k: redhat.telemetry.enabled, v: "false" }
-#     - { k: extensions.ignoreRecommendations, v: "true" }
-
 - name: Configure vscode keybindings
   lineinfile:
     path: '$HOME/.config/Code/User/keybindings.json'
@@ -63,12 +23,6 @@
     - { key: "ctrl+d ctrl+b", command: "vscode-docker.images.build" }
     - { key: "ctrl+d ctrl+p", command: "vscode-docker.images.push" }
     
-# - name: Add vscode-os4 to path
-#   lineinfile:
-#     line: export PATH=$PATH:$HOME/.vscode/extensions/redhat.vscode-openshift-connector-*/out/tools/linux:$HOME/.crc/bin/oc
-#     regexp: ^export PATH=
-#     path: '$HOME/.zshrc'
-
 - name: Create ~/.config/git
   file:
     path: '$HOME/.config/git/'
@@ -101,57 +55,6 @@
     - { k: "gpg.program", v: "gpg" }
     - { k: "credential.helper", v: "cache" }
     - { k: "commit.template", v: "$HOME/.config/git/.gitmessage_global" }
-
-# - name: Create ~/.config/direnv/os4template
-#   file:
-#     path: '$HOME/.config/direnv/os4template'
-#     state: directory
-#     owner: '{{ ansible_user_id }}'
-#     group: '{{ ansible_user_id }}'
-#     mode: '751'
-
-# - name: Configure direnv
-#   copy:
-#     dest: '$HOME/.config/direnv/direnv.toml'
-#     owner: '{{ ansible_user_id }}'
-#     group: '{{ ansible_user_id }}'
-#     mode: '640'
-#     content: |
-#       [whitelist]
-#       prefix = [ "{{ local_development_root }}" ]
-
-# - name: Configure root direnv .envrc
-#   copy:
-#     dest: '{{ local_development_root }}/.envrc'
-#     owner: '{{ ansible_user_id }}'
-#     group: '{{ ansible_user_id }}'
-#     mode: '640'
-#     content: |
-#       #!/bin/bash -e
-#       # SETS: OC_PROJECT OC_REG OC_USER
-#       # env_vars_required OC_TOKEN OC_CLUSTER
-
-#       oc whoami
-#       [[ $? != 0 ]] && oc login https://api.${OC_CLUSTER}:6443 --token="${OC_TOKEN}" || export OC_USER=$(oc whoami)
-
-#       export OC_PROJECT=$(oc project -q)
-#       [[ "${OC_PROJECT}" == "default" ]] && exit 1
-
-#       oc get route default-route -n openshift-image-registry -o jsonpath='{.spec.host}'
-#       [[ $? != 0 ]] && export OC_REG="default-route-openshift-image-registry.apps-${OC_CLUSTER}" || export OC_REG=$(oc get route default-route -n openshift-image-registry -o jsonpath='{.spec.host}')
-
-#       export OC_PUSHTARGET=${OC_REG}/${OC_PROJECT}
-
-#       docker login -u ${OC_USER} -p ${OC_TOKEN} ${OC_REG}
-
-# - name: Move os4 templates to $HOME/.config/direnv/os4template
-#   copy:
-#     src: 'os4template'
-#     dest: '$HOME/.config/direnv/os4template'
-#     owner: '{{ ansible_user_id }}'
-#     group: '{{ ansible_user_id }}'
-#     mode: '640'
-#     directory_mode: '750'
 
 - name: Create build mountpoint
   become: true
