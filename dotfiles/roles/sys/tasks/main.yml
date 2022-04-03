@@ -1,21 +1,14 @@
----
-- name: Install required systems applications
-  package:
-    name:
-      - gnupg
-      - expect
-      - lshw
-    state: present
-
-- name: Reconfigure fstab
-  ansible.posix.mount:
-    path: '{{ item.dir }}'
-    src: 'UUID={{ item.uuid }}'
-    state: mounted
-    fstype: ext4
-    opts: defaults,rw,acl
-    backup: yes
-  loop: '{{ block_devices }}'
+# File deprecated
+#---
+# - name: Reconfigure fstab
+#   ansible.posix.mount:
+#     path: '{{ item.dir }}'
+#     src: 'UUID={{ item.uuid }}'
+#     state: mounted
+#     fstype: ext4
+#     opts: defaults,rw,acl
+#     backup: yes
+#   loop: '{{ block_devices }}'
 
 # This works, but this playlist is stored on a data directory, so I can't unmount it...
 # - name: Unmount data directories
@@ -34,45 +27,51 @@
 #   loop: '{{ block_devices }}'
 #   when: item.type == 'data'
 
-- name: Update fstab for directories
-  ansible.posix.mount:
-    path: '{{ item.dir }}'
-    src: 'UUID={{ item.uuid }}'
-    state: mounted
-    fstype: ext4
-    opts: defaults,rw,acl
-    backup: yes
-  loop: '{{ block_devices }}'
+# - name: Update fstab for directories
+#   ansible.posix.mount:
+#     path: '{{ item.dir }}'
+#     src: 'UUID={{ item.uuid }}'
+#     state: mounted
+#     fstype: ext4
+#     opts: defaults,rw,acl
+#     backup: yes
+#   loop: '{{ block_devices }}'
 
-- name: Set data directory ACL
-  ansible.posix.acl:
-    path: '{{ item.dir }}'
-    entity: wheel
-    etype: group
-    permissions: rwx
-    state: present
-  loop: '{{ block_devices }}'
+# - name: Set data directory ACL
+#   ansible.posix.acl:
+#     path: '{{ item.dir }}'
+#     entity: wheel
+#     etype: group
+#     permissions: rwx
+#     state: present
+#   loop: '{{ block_devices }}'
 
-- name: Set data directory default ACL
-  ansible.posix.acl:
-    path: '{{ item.dir }}'
-    entity: wheel
-    etype: group
-    permissions: rwx
-    default: yes
-    state: present
-  loop: '{{ block_devices }}'
+# - name: Set data directory default ACL
+#   ansible.posix.acl:
+#     path: '{{ item.dir }}'
+#     entity: wheel
+#     etype: group
+#     permissions: rwx
+#     default: yes
+#     state: present
+#   loop: '{{ block_devices }}'
 
-- name: Resize tmpfs
-  ansible.posix.mount:
-    path: '{{ item.dir }}'
-    src: tmpfs
-    state: mounted
-    fstype: tmpfs
-    opts: 'size={{ item.size }}'
-    backup: yes
-  loop: '{{ tmpfs_devices }}'
+# - name: Resize tmpfs
+#   ansible.posix.mount:
+#     path: '{{ item.dir }}'
+#     src: tmpfs
+#     state: mounted
+#     fstype: tmpfs
+#     opts: 'size={{ item.size }}'
+#     backup: yes
+#   loop: '{{ tmpfs_devices }}'
 
+# - name: Set swappiness to 1
+#   lineinfile:
+#     path: /etc/sysctl.d/10-swap.conf
+#     create: yes
+#     mode: '644'
+#     line: vm.swappiness = 1
     
 # - name: Install nmcli
 #   package: 
