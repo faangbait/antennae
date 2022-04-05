@@ -106,7 +106,7 @@
 
 - name: Install Oh My Bash
   raw: bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
-  when: omb_exists.stat.exists is false
+  when: not omb_exists.stat.exists
 
 - name: Configure Oh My Bash Plugins
   replace:

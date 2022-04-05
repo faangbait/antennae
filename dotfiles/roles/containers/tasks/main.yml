@@ -79,6 +79,14 @@
   become: false
   command: crc config set memory {{ proc_mem.stdout }}
 
+- name: Config CRC Disk Size
+  become: false
+  command: crc config set disk-size 256
+
+- name: Set kubeadmin password
+  become: false
+  command: crc config set kubeadmin-password speakfriendandenter
+
 - name: Create OC Package Manager Directory
   become: true
   file:
