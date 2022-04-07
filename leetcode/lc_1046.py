@@ -1,6 +1,7 @@
 import array
 import bisect
 import collections
+from heapq import heapify,heappop,heappush, heappushpop
 import sortedcontainers
 import pytest
 import logging
@@ -14,7 +15,8 @@ solverFunc = "lastStoneWeight"
 
 leetcode_inputs = [
     ([[2,7,4,1,8,1]], 1),
-    ([[1]], 1)
+    ([[1]], 1),
+    ([[2,7,4,1,8,1,2,7,4,1,8,1]],0)
 ]
 
 class Solution:
@@ -42,13 +44,18 @@ class Solution:
         Returns:
             int: The smallest possible weight of the left stone. If there are no stones left, return 0.
         """
-        def smash(a, b):
-            return abs(a-b)
 
-        while len(stones) > 1:
-            stones.sort(reverse=True)
-            stones.append(smash(stones.pop(0), stones.pop(0)))
-        return stones[0]
+        for idx, stone in enumerate(stones):
+            stones[idx] = -stone
+
+        heapify(stones)
+        a = -heappop(stones)
+        while stones:
+            b = -heappop(stones)
+            a = -heappushpop(stones, -abs(a-b))
+        return a
+
+
 
 ################################################################################
 
