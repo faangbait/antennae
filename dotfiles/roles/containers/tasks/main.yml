@@ -104,3 +104,11 @@
   when: item.OC_URL | length > 0
   loop: '{{ oc_package_manager_dict }}'
 
+- name: install crcreds utility script
+  become: true
+  copy:
+    content: |
+      #!/bin/bash
+      eval $(crc console --credentials | grep -o "'.*'$" | awk -F"'" '{print $2}')
+    path: /usr/local/bin/crcreds
+    attributes: "+x"
