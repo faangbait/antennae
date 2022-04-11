@@ -16,26 +16,32 @@ fn main(){
 // Return the 2D grid after applying shift operation k times.
 impl Solution {
     pub fn shift_grid(grid: Vec<Vec<i32>>, k: i32) -> Vec<Vec<i32>> {
-        let mut decomposed = vec![];
-        let row_len = grid[0].len();
-        let height = grid.len();
+        // let mut decomposed = vec![];
+        // let row_len = grid[0].len();
+        // let height = grid.len();
 
-        for i in grid {
-            for j in i {
-                decomposed.push(j);
-            }
-        };
+        // for i in grid {
+        //     for j in i {
+        //         decomposed.push(j);
+        //     }
+        // };
 
-        (0..k).for_each(|_i| {let val = decomposed.pop().unwrap(); decomposed.insert(0,val);} );
+        // (0..k).for_each(|_i| {let val = decomposed.pop().unwrap(); decomposed.insert(0,val);} );
 
-        let mut recomposed = vec![];
-        (0..height).for_each(|_i| recomposed.push(vec![]));
-        for (idx, val) in decomposed.iter_mut().enumerate() {
-            println!("{}, {}", idx, val);
-            recomposed[idx / row_len].push(*val);
-        }
+        // let mut recomposed = vec![];
+        // (0..height).for_each(|_i| recomposed.push(vec![]));
+        // for (idx, val) in decomposed.iter_mut().enumerate() {
+        //     println!("{}, {}", idx, val);
+        //     recomposed[idx / row_len].push(*val);
+        // }
 
-        recomposed
-        
+        // recomposed
+
+        let mut decomposed = grid.concat();
+        let len = decomposed.len();
+        decomposed.rotate_right(k as usize % len);
+        decomposed.chunks(grid[0].len())
+            .map(|s| s.to_vec())
+            .collect()
     }
 }
