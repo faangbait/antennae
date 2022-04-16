@@ -291,7 +291,6 @@
 - name: Configure p10k
   blockinfile:
     path: '$HOME/.zshrc'
-    regexp: p10k-instant-prompt
     block: |
       if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
         source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
