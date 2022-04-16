@@ -1,7 +1,12 @@
 ---
-- src: gantsign.visual-studio-code
-- src: tvieira.powerline-fonts
-- src: geerlingguy.kubernetes
-- src: geerlingguy.helm
-- src: geerlingguy.pip
-- src: gantsign.golang
+roles:
+- name: gantsign.visual-studio-code
+- name: tvieira.powerline-fonts
+- name: geerlingguy.kubernetes
+- name: geerlingguy.helm
+- name: geerlingguy.pip
+- name: gantsign.golang
+
+collections:
+- ansible.posix
+- community.general
