@@ -1,0 +1,23 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+  - name: Install basic system
+    package:
+      name:
+        - nano
+        - git
+        - ansible-core
+        - stratisd
+        - stratis-cli
+        - "@gnome"
+        - tar
+        - unzip
+      state: latest
+  - name: Update system packages
+    command: yum update -y
+  - name: Enable gdm
+    systemd:
+      name: gdm
+      enabled: yes
+      state: started
