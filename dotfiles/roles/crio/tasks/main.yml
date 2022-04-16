@@ -5,9 +5,11 @@
     name: '{{ item.name }}'
     description: '{{ item.name }} repository'
     baseurl: '{{ item.baseurl }}'
+    gpgkey: '{{ item.gpgkey }}'
   loop:
-    - { name: 'crio-latest', baseurl: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/'}
-    - { name: 'crio-pinned', baseurl: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.23/CentOS_8_Stream/'}
+    - { name: 'crio-latest', baseurl: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/', gpgkey: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/repodata/repomd.xml.key'}
+    - { name: 'crio-pinned', baseurl: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ crio_version }}/CentOS_8_Stream/', gpgkey: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ crio_version }}/CentOS_8_Stream/repodata/repomd.xml.key'}
+
 
 - name: Install cri-o
   package:
