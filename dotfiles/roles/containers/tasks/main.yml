@@ -6,6 +6,7 @@
       - skopeo #1.6.0
       - podman #3.4.4
       - jq #1.6
+      - make
     state: present
 
 - name: Get latest pass release
@@ -51,14 +52,6 @@
   file:
     name: /usr/local/bin/LICENSE
     state: absent
-  when: crc_stat.stat.exists is false
-
-- name: Setup CRC
-  become: false
-  expect:
-    command: /usr/local/bin/crc setup
-    responses:
-      'crc config set consent-telemetry': 'N'
   when: crc_stat.stat.exists is false
 
 - name: Get current threadcount
