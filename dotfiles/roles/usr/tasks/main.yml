@@ -73,7 +73,7 @@
       - com.ulduzsoft.Birdtray
       - us.zoom.Zoom
       - com.github.tchx84.Flatseal
-      - com.meetfranz.Franz
+      - org.gnucash.GnuCash
     remote: flathub
     
 # Works fine, but is annoying on repeat runs. Needs an idempotency flag.
