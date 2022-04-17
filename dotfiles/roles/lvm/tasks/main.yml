@@ -1,0 +1,7 @@
+---
+# fdisk /dev/nvme0n1
+# pvcreate /dev/nvme0n1p1
+# lvcreate -n cachepool_meta -L 100M localstorage /dev/nvme0n1p1
+# lvcreate -n cachepool -L 10G localstorage /dev/nvme0n1p1
+# lv convert --type cache-pool --poolmetadata cachepool_meta localstorage/cachepool
+# lv convert --type cache --cache-pool cachepool --cachemode writeback localstorage/raiddata
