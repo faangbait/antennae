@@ -6,7 +6,8 @@ roles:
 - name: geerlingguy.helm
 - name: geerlingguy.pip
 - name: gantsign.golang
+- name: fubarhouse.rust
 
 collections:
-- ansible.posix
-- community.general
+- name: ansible.posix
+- name: community.general

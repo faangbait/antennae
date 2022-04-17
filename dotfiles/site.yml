@@ -2,6 +2,12 @@
 - hosts: localhost
   roles:
 
+# Install basic utilities
+    - role: 'sys'
+      become: true
+      tags:
+        - sys
+
 # Securely decrypts and installs a GnuPG key stored openly in a public repo
     - role: 'secrets'
       become: false
@@ -24,51 +30,57 @@
         golang_install_dir: '/usr/local/go'
         golang_gopath: '$HOME/dev/go'
 
+    - role: 'fubarhouse.rust'
+      become: true
+      tags:
+        - devtools
+        - sys
+        - rust
 
 # Sets up a kubernetes+podman+oc pipeline for OpenShift 4; ideal for developers / OS4 Application Delivery specialists
 # Tested on CentOS 8 Stream
 
-    - role: 'crio'
-      become: true
-      tags:
-        - containers
-      vars: 
-        crio_os: CentOS_8_Stream
-        crio_version: 1.23 # Match with kubernetes
+#    - role: 'crio'
+#      become: true
+#      tags:
+#        - containers
+#      vars: 
+#        crio_os: CentOS_8_Stream
+#        crio_version: 1.23 # Match with kubernetes
 
-    - role: 'geerlingguy.kubernetes'
-      become: true
-      tags:
-        - containers
-      vars:
-        kubernetes_version: 1.23 # Match with crio
-        kubernetes_version_rhel_package: 1.23.5 # Match with crio
-        kubernetes_allow_pods_on_master: true
-        kubernetes_config_kubelet_configuration:
-          cgroupDriver: systemd
-          fail-swap-on: false
+#    - role: 'geerlingguy.kubernetes'
+#      become: true
+#      tags:
+#        - containers
+#      vars:
+#        kubernetes_version: 1.23 # Match with crio
+#        kubernetes_version_rhel_package: 1.23.5 # Match with crio
+#        kubernetes_allow_pods_on_master: true
+#        kubernetes_config_kubelet_configuration:
+#          cgroupDriver: systemd
+#          fail-swap-on: false
 
-    - role: 'geerlingguy.helm'
-      become: true
-      tags:
-        - containers
+#    - role: 'geerlingguy.helm'
+#      become: true
+#      tags:
+#        - containers
 
-    - role: 'geerlingguy.pip'
-      become: true
-      tags:
-        - containers
-      vars:
-        pip_install_packages:
-          - kubernetes
+#    - role: 'geerlingguy.pip'
+#      become: true
+#      tags:
+#        - containers
+#      vars:
+#        pip_install_packages:
+#          - kubernetes
 
-    - role: containers
-      become: true
-      tags:
-        - containers
-      vars:
-        primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
-        crc_version: 1.34.0 # The expected version is defined by the vscode extension -> Add OpenShift Cluster
-        oc_package_manager_dict: # RedHat links last six hours, so filling this out is a manual process.
+#    - role: containers
+#      become: true
+#      tags:
+#        - containers
+#      vars:
+#        primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
+#        crc_version: 1.34.0 # The expected version is defined by the vscode extension -> Add OpenShift Cluster
+#        oc_package_manager_dict: # RedHat links last six hours, so filling this out is a manual process.
           # - { OC_VERSION: 4.10.6, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/8f/8f43219...'}
           # - { OC_VERSION: 4.10.5, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/00/0023cf3...'}
           # - { OC_VERSION: 4.10.4, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/33/33bd768...'}

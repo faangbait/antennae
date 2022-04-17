@@ -1,0 +1,23 @@
+---
+- name: Install EPEL
+  package:
+    name:
+      - epel-release
+
+- name: Install basic system utils
+  package:
+    name:
+      - nano
+      - git
+      - ansible-core
+      - hdparm
+      - hwinfo
+      - gcc
+      - make
+      - tar
+      - unzip
+      - iotop
+    state: latest
+
+- name: Update system packages
+  command: dnf update -y
