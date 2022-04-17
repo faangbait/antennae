@@ -17,6 +17,7 @@
       - tar
       - unzip
       - iotop
+      - perl-core
     state: latest
 
 - name: Update system packages

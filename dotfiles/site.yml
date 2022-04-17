@@ -30,15 +30,6 @@
         golang_install_dir: '/usr/local/go'
         golang_gopath: '$HOME/dev/go'
 
-    - role: 'fubarhouse.rust'
-      become: true
-      tags:
-        - devtools
-        - sys
-        - rust
-      vars:
-        rust_update: yes
-        rust_install_clean: yes
 # Sets up a kubernetes+podman+oc pipeline for OpenShift 4; ideal for developers / OS4 Application Delivery specialists
 # Tested on CentOS 8 Stream
 
