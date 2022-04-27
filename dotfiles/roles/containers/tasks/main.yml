@@ -33,6 +33,12 @@
   command: 'pass init {{ primary_gpg_keyid }}'
   when: pass_status is failed
 
+- name: Podman socket
+  systemd:
+    name: podman.socket
+    enabled: yes
+    status: running
+    
 - name: First time running CRC?
   become: false
   stat:
