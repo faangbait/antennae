@@ -1,0 +1,17 @@
+[package]
+name = "algorhythm"
+authors = ["S Smith <root@madeof.glass>"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tera = "1"
+serde = "1"
+actix-web = "4"
+tokio = { version = "1", features = ["full"] }
+# tracing = "0.1"
+# tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+lazy_static = "1"
+env_logger = "0"
