@@ -1,0 +1,115 @@
+---
+- hosts: "masters, workers"
+  become: yes
+  become_method: sudo
+  become_user: root
+  gather_facts: yes
+  connection: ssh
+
+  tasks:
+    - name: Add containerd conf
+      blockinfile:
+        path: "/etc/modules-load.d/containerd.conf"
+        block: |
+          overlay
+          br_netfilter
+        create: yes
+
+    - name: Modprobe required modules
+      shell: |
+        modprobe overlay
+        modprobe br_netfilter
+    
+    - name: Configure k8s networking
+      blockinfile:
+        path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+        block: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+        create: yes
+
+    - name: Load new networking config
+      command: sysctl --system
+
+    - name: Disable selinux
+      shell: | 
+        sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+        setenforce 0
+
+    - name: Add containerd repo
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: '0644'
+
+    - name: Remove default container system
+      package:
+        name:
+          - podman
+          - buildah
+          - runc
+        state: absent
+
+    - name: Install containerd
+      package:
+        name:
+          - containerd.io
+          - yum-plugin-versionlock
+    
+    - name: Add containerd folder
+      file:
+        state: directory
+        path: /etc/containerd
+        mode: '0751'
+
+    - name: Configure containerd
+      command: containerd config default | tee /etc/containerd/config.toml
+    
+    - name: Add systemd cgroup driver
+      copy:
+        dest: '/etc/containerd/config.toml'
+        content: |
+          disabled_plugins=[""]
+          [plugins."io.containerd.grpc.v1.cri"]
+              systemd_cgroup = true
+        mode: '0644'
+    
+
+    - name: Start and enable containerd
+      systemd:
+        name: containerd
+        enabled: yes
+        state: restarted
+    
+    - name: Add repo kubelet, kubeadm, kubectl
+      copy:
+        content: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+          exclude=kubelet kubeadm kubectl
+
+        dest: '/etc/yum.repos.d/kubernetes.repo'
+        mode: '0640'
+
+    - name: Install kubelet, kubeadm, kubectl
+      dnf:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        disable_excludes: 'kubernetes'
+
+    - name: Pin packages
+      command: 'dnf versionlock kubelet kubeadm kubectl'      
+
+    - name: Start kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: restarted
