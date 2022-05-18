@@ -1,0 +1,52 @@
+additionalArguments:
+  - "--certificatesresolvers.letsencrypt.acme.email=root@madeof.glass"
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+  - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
+  - "--certificatesResolvers.letsencrypt.acme.dnschallenge.provider=route53"
+  - "--certificatesResolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53"
+  - "--api.insecure=true"
+  - "--accesslog=true"
+  - "--log.level=INFO"
+
+envFrom:
+  - secretRef:
+      name: aws-credentials
+
+# hostNetwork: true
+ports:
+  web:
+    port: 80
+    redirectTo: websecure
+  websecure:
+    port: 443
+    tls:
+      enabled: true
+      options: ""
+      certResolver: "letsencrypt"
+      domains:
+        - main: beta.madeof.glass
+          sans: "*.madeof.glass"
+service:
+  enabled: true
+  type: LoadBalancer
+  externalIPs:
+    - 10.0.0.250
+
+persistence:
+  enabled: true
+  name: traefik-config
+  accessMode: ReadWriteOnce
+  size: 128Mi
+  path: /data
+  annotations: {}
+  subPath: "traefik-config"
+  storageClass: "nfs-client"
+
+securityContext:
+  capabilities:
+    drop: [ALL]
+    add: [NET_BIND_SERVICE]
+  readOnlyRootFilesystem: true
+  runAsGroup: 0
+  runAsNonRoot: false
+  runAsUser: 0

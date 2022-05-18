@@ -1,0 +1,61 @@
+---
+- hosts: 'master'
+  become: yes
+  become_user: kube
+
+  tasks:
+    - name: create sabnzbd deployment
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Deployment
+          metadata:
+            name: sabnzbd
+            namespace: usenet
+            labels:
+              app: sabnzbd
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: sabnzbd
+            template:
+              metadata:
+                labels:
+                  app: sabnzbd
+              spec:
+                containers:
+                - name: sabnzbd
+                  image: lscr.io/linuxserver/sabnzbd:latest
+                  ports:
+                  - name: sabnzbd-web
+                    containerPort: 8080
+                  volumeMounts:
+                  - name: data
+                    mountPath: /downloads
+                  - name: config
+                    mountPath: /config
+                volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: usenet-storage
+                - name: config
+                  persistentVolumeClaim:
+                    claimName: sabnzbd-config-pvc
+    - name: create sabnzbd service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            labels:
+              app: sabnzbd
+            namespace: usenet
+            name: sabnzbd-svc
+          spec:
+            ports:
+            - port: 80
+              protocol: TCP
+            type: LoadBalancer
+            selector:
+              app: sabnzbd
