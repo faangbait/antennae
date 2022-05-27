@@ -1,23 +1,19 @@
 ---
-# Usenet / SABNZBD has gotten a reputation as a piracy platform.
-# Don't pirate, kids. Join the open source community instead!
-# I use SABNZBD to monitor and fetch actual Linux ISOs so my VMs use the latest image.
-
 - hosts: 'master'
   become: yes
   become_user: kube
 
   tasks:
-    - name: Create PVC to store SABNZBD Configuration
+    - name: Create PVC to store NZBHydra Configuration
       kubernetes.core.k8s:
         definition:
           apiVersion: v1
           kind: PersistentVolumeClaim
           metadata:
-            name: sabnzbd-config
+            name: nzbhydra-config
             namespace: usenet
             labels:
-              app: usenet
+              app: nzbhydra
           spec:
             storageClassName: nfs-client
             accessModes:
@@ -25,90 +21,105 @@
             resources:
               requests:
                 storage: 100Gi
+    
+    - name: Create PVC for NZB Watch Directory
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: nzbwatch
+            namespace: usenet
+            labels:
+              app: nzbhydra
+          spec:
+            storageClassName: nfs-client
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: 100Gi
+    
 
-    - name: Create SABNZBD Deployment
+    - name: Create NZBHydra Deployment
       kubernetes.core.k8s:
         definition:
           apiVersion: v1
           kind: Deployment
           metadata:
-            name: sabnzbd
+            name: nzbhydra
             namespace: usenet
             labels:
-              app: sabnzbd
+              app: nzbhydra
           spec:
             replicas: 2
             selector:
               matchLabels:
-                app: sabnzbd
+                app: nzbhydra
             template:
               metadata:
                 labels:
-                  app: sabnzbd
+                  app: nzbhydra
               spec:
                 containers:
-                - name: sabnzbd
-                  image: lscr.io/linuxserver/sabnzbd:latest
+                - name: nzbhydra
+                  image: lscr.io/linuxserver/nzbhydra2:latest
                   ports:
-                  - name: sabnzbd-web
-                    containerPort: 8080
-                  volumeMounts:
-                  - name: data
-                    mountPath: /downloads
-                  - name: config
-                    mountPath: /config
-                  - name: nzbwatch
-                    mountPath: /watch
+                  - name: nzbhydra-web
+                    containerPort: 5076
                 volumes:
-                - name: data
+                - name: nzbhydra-config
                   persistentVolumeClaim:
-                    claimName: usenet-storage
-                - name: config
-                  persistentVolumeClaim:
-                    claimName: sabnzbd-config
+                    claimName: nzbhydra-config
                 - name: nzbwatch
                   persistentVolumeClaim:
                     claimName: nzbwatch
+                volumeMounts:
+                - name: nzbhydra-config
+                  mountPath: /config
+                - name: nzbwatch
+                  mountPath: /downloads
 
-    - name: Create SABNZBD Service
+    
+    - name: Create NZBHydra Service
       kubernetes.core.k8s:
         definition:
           apiVersion: v1
           kind: Service
           metadata:
             labels:
-              app: sabnzbd
+              app: nzbhydra
             namespace: usenet
-            name: sabnzbd-svc
+            name: nzbhydra-svc
           spec:
             ports:
-            - name: sabnzbd-svc-port
-              port: 8080
+            - name: nzbhydra-svc-port
+              port: 5076
               protocol: TCP
             selector:
-              app: sabnzbd
-
-    - name: Create SABNZBD IngressRoute
+              app: nzbhydra
+    
+    - name: Create NZBHydra IngressRoute
       kubernetes.core.k8s:
         definition:
           apiVersion: traefik.containo.us/v1alpha1
           kind: IngressRoute
           metadata:
-            name: sabnzbd
+            name: nzbhydra
             namespace: usenet
           spec:
             entryPoints:
               - websecure
             routes:
-              - match: Host(`fetch.news.madeof.glass`)
+              - match: Host(`search.news.madeof.glass`)
                 kind: Rule
+                priority: 10
                 middlewares:
                 - name: insecure-auth
                   namespace: usenet
                 services:
-                  - name: sabnzbd-svc
-                    port: 8080
+                  - name: nzbhydra-svc
+                    port: 5076
                     namespace: usenet
             tls:
               certResolver: letsencrypt
-
