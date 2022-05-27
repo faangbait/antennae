@@ -15,7 +15,7 @@
             labels:
               app: sabnzbd
           spec:
-            replicas: 3
+            replicas: 2
             selector:
               matchLabels:
                 app: sabnzbd
@@ -41,7 +41,8 @@
                     claimName: usenet-storage
                 - name: config
                   persistentVolumeClaim:
-                    claimName: sabnzbd-config-pvc
+                    claimName: sabnzbd-config
+
     - name: create sabnzbd service
       kubernetes.core.k8s:
         definition:
@@ -54,8 +55,32 @@
             name: sabnzbd-svc
           spec:
             ports:
-            - port: 80
+            - name: sabnzbd-svc-port
+              port: 8080
               protocol: TCP
-            type: LoadBalancer
             selector:
               app: sabnzbd
+
+    - name: create IngressRoute
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: sabnzbd
+            namespace: usenet
+          spec:
+            entryPoints:
+              - websecure
+            routes:
+              - match: Host(`beta.madeof.glass`)
+                kind: Rule
+                middlewares:
+                - name: insecure-auth
+                  namespace: usenet
+                services:
+                  - name: sabnzbd-svc
+                    port: 8080
+                    namespace: usenet
+            tls:
+              certResolver: letsencrypt

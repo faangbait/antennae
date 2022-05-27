@@ -1,0 +1,5 @@
+Static Route: K8s
+Destination Network: 10.0.10.0/24
+Distance: 1
+Static Route Type: Interface
+Interface: Trusted LAN

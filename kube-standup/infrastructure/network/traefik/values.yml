@@ -12,7 +12,6 @@ envFrom:
   - secretRef:
       name: aws-credentials
 
-# hostNetwork: true
 ports:
   web:
     port: 80
@@ -24,13 +23,21 @@ ports:
       options: ""
       certResolver: "letsencrypt"
       domains:
-        - main: beta.madeof.glass
-          sans: "*.madeof.glass"
+        - main: "*.madeof.glass"
+
 service:
   enabled: true
   type: LoadBalancer
-  externalIPs:
-    - 10.0.0.250
+  spec:
+    loadBalancerIP: "10.0.10.129"
+
+# tlsOptions:
+#   default:
+#     sniStrict: true
+#     preferServerCipherSuites: true
+#     curvePreferences:
+#       - CurveP521
+#       - CurveP384
 
 persistence:
   enabled: true
@@ -38,8 +45,6 @@ persistence:
   accessMode: ReadWriteOnce
   size: 128Mi
   path: /data
-  annotations: {}
-  subPath: "traefik-config"
   storageClass: "nfs-client"
 
 securityContext:

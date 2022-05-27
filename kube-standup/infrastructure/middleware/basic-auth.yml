@@ -1,0 +1,17 @@
+---
+- hosts: 'master'
+  become: yes
+  become_user: kube
+
+  tasks:
+    - name: Traefik Basic Auth
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: insecure-auth
+            namespace: usenet
+          spec:
+            basicAuth:
+              secret: insecure-auth

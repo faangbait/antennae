@@ -1,0 +1,18 @@
+---
+- hosts: 'master'
+  become: yes
+  become_user: root
+
+  vars:
+    APISERVER_MANIFEST: /etc/kubernetes/manifests/kube-apiserver.yaml
+
+
+  tasks:
+    - name: Securely configure the Kubernetes API server
+      lineinfile:
+        name: '{{ APISERVER_MANIFEST }}'
+        regexp: ''
+        state: present
+      check_mode: yes
+      register: conf
+      failed_when: (conf is changed) or (conf is failed)
