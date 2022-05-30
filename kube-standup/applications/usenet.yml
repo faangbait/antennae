@@ -24,7 +24,7 @@
               - ReadWriteMany
             resources:
               requests:
-                storage: 100Gi
+                storage: 20Mi
 
     - name: Create SABNZBD Deployment
       kubernetes.core.k8s:
@@ -37,7 +37,7 @@
             labels:
               app: sabnzbd
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: sabnzbd
@@ -62,7 +62,7 @@
                 volumes:
                 - name: data
                   persistentVolumeClaim:
-                    claimName: usenet-storage
+                    claimName: storage
                 - name: config
                   persistentVolumeClaim:
                     claimName: sabnzbd-config

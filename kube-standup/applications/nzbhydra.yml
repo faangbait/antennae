@@ -15,12 +15,11 @@
             labels:
               app: nzbhydra
           spec:
-            storageClassName: nfs-client
             accessModes:
               - ReadWriteMany
             resources:
               requests:
-                storage: 100Gi
+                storage: 20Mi
     
     - name: Create PVC for NZB Watch Directory
       kubernetes.core.k8s:
@@ -33,12 +32,11 @@
             labels:
               app: nzbhydra
           spec:
-            storageClassName: nfs-client
             accessModes:
               - ReadWriteMany
             resources:
               requests:
-                storage: 100Gi
+                storage: 20Mi
     
 
     - name: Create NZBHydra Deployment
@@ -52,7 +50,7 @@
             labels:
               app: nzbhydra
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: nzbhydra
@@ -68,17 +66,17 @@
                   - name: nzbhydra-web
                     containerPort: 5076
                 volumes:
-                - name: nzbhydra-config
+                - name: config
                   persistentVolumeClaim:
                     claimName: nzbhydra-config
                 - name: nzbwatch
                   persistentVolumeClaim:
                     claimName: nzbwatch
                 volumeMounts:
-                - name: nzbhydra-config
+                - name: config
                   mountPath: /config
                 - name: nzbwatch
-                  mountPath: /downloads
+                  mountPath: /watch
 
     
     - name: Create NZBHydra Service
