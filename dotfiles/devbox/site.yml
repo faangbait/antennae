@@ -147,35 +147,32 @@
       users:
         - username: "{{ ansible_user_id }}"
           visual_studio_code_extensions:
-            # - 4ops.terraform
             - aaron-bond.better-comments
-            # - batisteo.vscode-django
             - christian-kohler.path-intellisense
             - eamodio.gitlens
             - Equinusocio.vsc-material-theme
             - Equinusocio.vsc-material-theme-icons
-            - formulahendry.code-runner
-            - golang.Go
             - IBM.output-colorizer
             - mads-hartmann.bash-ide-vscode
             - mhutchie.git-graph
             - mikestead.dotenv
-            - ms-azuretools.vscode-docker
-            - ms-python.python
-            - njpwerner.autodocstring
+            #- ms-azuretools.vscode-docker
+            - ms-kubernetes-tools.vscode-kubernetes-tools
+            #- ms-python.python
+            # - njpwerner.autodocstring
             - redhat.ansible
-            - redhat.fabric8-analytics
-            - redhat.java
-            - redhat.vscode-knative
-            - redhat.vscode-openshift-extension-pack
-            - redhat.vscode-openshift-java-pack
-            - redhat.vscode-quarkus
-            - redhat.vscode-tekton-pipelines
+            #- redhat.fabric8-analytics
+            #- redhat.java
+            #- redhat.vscode-knative
+            #- redhat.vscode-openshift-extension-pack
+            #- redhat.vscode-openshift-java-pack
+            #- redhat.vscode-quarkus
+            #- redhat.vscode-tekton-pipelines
             - redhat.vscode-yaml
             # - ritwickdey.LiveServer
             - Trunk.io
-            - Tim-Koehler.helm-intellisense
-            - VisualStudioExptTeam.vscodeintellicode
+            #- Tim-Koehler.helm-intellisense
+            #- VisualStudioExptTeam.vscodeintellicode
             - wholroyd.jinja
 
           visual_studio_code_settings_overwrite: yes
@@ -191,11 +188,9 @@
             "extensions.ignoreRecommendations": true,
             "files.insertFinalNewline": true,
             "git.alwaysSignOff": true,
-            "git.autofetch": true,
             "git.closeDiffOnOperation": true,
             "git.enableCommitSigning": true,
             "git-graph.repository.commits.mute.commitsThatAreNotAncestorsOfHead": true,
-            "git.postCommitCommand": "push",
             "git.showPushSuccessNotification": true,
             "git.useCommitInputAsStashMessage": true,
             "javascript.suggest.paths": false,
@@ -210,7 +205,6 @@
             "trunk.trunkGrayOutNonBlockingIssues": false,
             "typescript.suggest.paths": false,
             "window.zoomLevel": 1.25 ,
-            "window.menuBarVisibility": "toggle", 
             "window.restoreFullscreen": true,
             "workbench.colorTheme": "Material Theme Darker High Contrast",
             "workbench.iconTheme": "eq-material-theme-icons-darker",
