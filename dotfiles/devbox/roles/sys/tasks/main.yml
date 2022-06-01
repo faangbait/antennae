@@ -9,9 +9,7 @@
     name:
       - nano
       - git
-      - ansible-core
       - hdparm
-      - hwinfo
       - gcc
       - make
       - tar
