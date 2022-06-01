@@ -352,7 +352,6 @@
             maximised = True
             fullscreen = False
             size = 3840, 2091
-            title = ss@fedora:/var/storage/breakthecode/Drive2/1
             last_active_term = 7ff22595-6f8c-4432-baff-259158d10d17
             last_active_window = True
           [[[child1]]]
@@ -406,7 +405,6 @@
             maximised = True
             fullscreen = False
             size = 3840, 2091
-            title = ss@fedora:/var/storage/breakthecode/Drive2/1
             last_active_term = 5ed00493-69c5-4fad-ab3f-1dcf19d0799f
             last_active_window = True
           [[[child1]]]
