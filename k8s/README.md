@@ -112,6 +112,8 @@ sudo systemctl enable --now kubelet
 
 sudo yum versionlock kubelet kubeadm kubectl
 
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 export VERSION=
 ```
 
@@ -175,15 +177,51 @@ helm repo add metallb https://metallb.github.io/metallb
 helm install metallb metallb/metallb -f k8s/infrastructure/metallb-values.yaml
 ```
 
-## Node 1: Configure Storage
-```sh
-
+## Node 1: Configure Storage (Gluster)
+I'd have preferred to run Ceph, but since I'm hosting the storage cluster on the same bare metal machines as k8s, the container runtime requirements can and will conflict. You'll end up with a dead K8s or a dead Ceph sooner or later. [Gluster Installation Instructions](https://docs.rockylinux.org/guides/file_sharing/glusterfs/).
+```yaml
+# Configure Endpoints
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: glusterfs-cluster
+  namespace: default
+  labels:
+    storage.k8s.io/name: glusterfs
+subsets:
+  - addresses:
+    - ip: 10.0.0.254
+      hostname: node1
+    - ip: 10.0.0.253
+      hostname: node2
+    - ip: 10.0.0.252
+      hostname: node3
+    ports:
+      - port: 1
+---
+# Configure Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: glusterfs-cluster
+  namespace: default
+  labels:
+    storage.k8s.io/name: glusterfs
+spec:
+  ports:
+  - port: 1
 ```
 
 ## Node 1: Configure Traefik
 ```sh
+sudo firewall-cmd --permanent --add-port=443/tcp
+sudo firewall-cmd --permanent --add-port=9000/tcp
+sudo firewall-cmd --reload
+
 kubectl create ns traefik
 kubectl config set-context --current --namespace=traefik
 helm repo add traefik https://helm.traefik.io/traefik
 helm install traefik traefik/traefik -f k8s/infrastructure/traefik-values.yaml
+
+kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID=XXXXX --from-literal=AWS_SECRET_ACCESS_KEY=XXXXX
 ```

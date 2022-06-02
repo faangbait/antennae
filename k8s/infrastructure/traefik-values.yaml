@@ -1,9 +1,6 @@
+
 additionalArguments:
-  - "--certificatesresolvers.letsencrypt.acme.email=root@madeof.glass"
-  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
-  - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
-  - "--certificatesResolvers.letsencrypt.acme.dnschallenge.provider=route53"
-  - "--certificatesResolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53"
+  - "--providers.kubernetesingress.ingressclass=traefik-internal"
   - "--api.insecure=true"
   - "--accesslog=true"
   - "--log.level=INFO"
@@ -11,6 +8,10 @@ additionalArguments:
 envFrom:
   - secretRef:
       name: aws-credentials
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
 
 ports:
   web:
@@ -39,13 +40,16 @@ tlsOptions:
       - CurveP521
       - CurveP384
 
-persistence:
-  enabled: true
-  name: traefik-config
-  accessMode: ReadWriteOnce
-  size: 128Mi
-  path: /data
-  storageClass: "nfs-client"
+certResolvers:
+  letsencrypt:
+    caServer: https://acme-staging-v02.api.letsencrypt.org/directory # demo
+    email: root@madeof.glass
+    dnsChallenge:
+      provider: route53
+      resolvers:
+        - 1.1.1.1
+        - 9.9.9.9
+    storage: /data/acme.json
 
 securityContext:
   capabilities:
