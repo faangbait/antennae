@@ -1,6 +1,5 @@
 
 additionalArguments:
-  - "--providers.kubernetesingress.ingressclass=traefik-internal"
   - "--api.insecure=true"
   - "--accesslog=true"
   - "--log.level=INFO"
@@ -8,10 +7,6 @@ additionalArguments:
 envFrom:
   - secretRef:
       name: aws-credentials
-
-ingressClass:
-  enabled: true
-  isDefaultClass: true
 
 ports:
   web:
@@ -42,7 +37,6 @@ tlsOptions:
 
 certResolvers:
   letsencrypt:
-    caServer: https://acme-staging-v02.api.letsencrypt.org/directory # demo
     email: root@madeof.glass
     dnsChallenge:
       provider: route53
