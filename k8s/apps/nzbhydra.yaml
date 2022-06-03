@@ -1,0 +1,160 @@
+# Create Usenet Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: usenet
+  labels:
+    app.kubernetes.io/part-of: usenet
+---
+# Create Storage Endpoint
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: glusterfs-cluster
+  namespace: usenet
+  labels:
+    storage.k8s.io/name: glusterfs-endpoint
+    app.kubernetes.io/name: glusterfs-endpoint
+    app.kubernetes.io/part-of: usenet
+subsets:
+  - addresses:
+    - ip: 10.0.0.254
+      nodeName: node1
+    - ip: 10.0.0.253
+      nodeName: node2
+    - ip: 10.0.0.252
+      nodeName: node3
+    ports:
+      - port: 42
+---
+# Create Storage Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: glusterfs-cluster
+  namespace: usenet
+  labels:
+    storage.k8s.io/name: glusterfs-service
+    app.kubernetes.io/name: glusterfs-service
+    app.kubernetes.io/part-of: usenet
+spec:
+  ports:
+  - port: 42
+---
+# Create Usenet Auth Middleware
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: htpasswd-auth
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: htpasswd-auth
+    app.kubernetes.io/part-of: usenet
+spec:
+  basicAuth:
+    secret: htpasswd-auth-secret
+---
+# Create Usenet Auth Secret
+# htpasswd -nb user password | openssl base64
+apiVersion: v1
+kind: Secret
+metadata:
+  name: htpasswd-auth-secret
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: htpasswd-auth-secret
+    app.kubernetes.io/part-of: usenet
+data:
+  users: |2
+    c3M6JGFwcjEkYW1BemRYMUgkRXMwOVEubUV2akRON2dOT0ZlajgwLgoK
+---
+# Create NZBHydra Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nzbhydra-web
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: nzbhydra-deployment
+    app.kubernetes.io/part-of: nzbhydra
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nzbhydra-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nzbhydra-web
+        app.kubernetes.io/part-of: nzbhydra
+    spec:
+      containers:
+      - name: nzbhydra-web
+        image: lscr.io/linuxserver/nzbhydra2
+        volumeMounts:
+        - mountPath: /downloads
+          name: cfg-nzbwatch
+          subPath: "nzb-watch"
+        - mountPath: /config
+          name: cfg-nzbhydra
+          subPath: "cfg-nzbhydra"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 2Gi
+            cpu: "2"
+      volumes:
+        - name: cfg-nzbwatch
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-nzbhydra
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create NZBHydra Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nzbhydra-service
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: nzbhydra-service
+    app.kubernetes.io/part-of: nzbhydra
+spec:
+  selector:
+    app.kubernetes.io/name: nzbhydra-web
+  ports:
+    - port: 5076
+      name: nzbhydra-service
+---
+# Create NZBHydra IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nzbhydra-ingress
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: nzbhydra-ingress
+    app.kubernetes.io/part-of: nzbhydra
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`search.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: usenet
+      services:
+        - name: nzbhydra-service
+          port: 5076
+  tls:
+    certResolver: letsencrypt
