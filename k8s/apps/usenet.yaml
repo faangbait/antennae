@@ -69,12 +69,16 @@ spec:
         volumeMounts:
         - mountPath: /data/complete
           name: bulk-complete
+          subPath: "nzb-complete"
         - mountPath: /data/incomplete
           name: bulk-incomplete
+          subPath: "nzb-incomplete"
         - mountPath: /data/watch # TODO: Consider changing to configMap
           name: cfg-nzbwatch
+          subPath: "nzb-watch"
         - mountPath: /config
           name: cfg-sabnzbd
+          subPath: "cfg-sabnzbd"
         resources:
           requests:
             memory: 512Mi
@@ -138,3 +142,5 @@ spec:
       services:
         - name: sabnzbd-service
           port: 8080
+  tls:
+    certResolver: letsencrypt
