@@ -7,11 +7,20 @@ terraform {
   }
 }
 
+#
+# ~/.aws/credentials
+# [kubernetes]
+# aws_access_key_id=
+# aws_secret_access_key=
+#
 provider "aws" {
   region = "us-east-1"
   shared_credentials_file = "~/.aws/credentials"
 }
 
+#
+# This should be the only block that needs changing regularly...
+#
 variable "routes" {
     type = object({
         glass = list(string)
@@ -27,7 +36,12 @@ variable "routes" {
     }
 }
 
-
+#
+# Route53 Dev/Prod Environment Setup
+#
+# glass: dev env hosted zone id
+# prod: prod env hosted zone id
+#
 variable "zones" {
     type = object({
         glass   = string
@@ -40,6 +54,7 @@ variable "zones" {
     }
 }
 
+# Add custom TXT records to your domains
 variable "txt_records" {
     type = object({
         glass   = list(string)
@@ -58,12 +73,16 @@ variable "txt_records" {
     }
 }
 
+#
+# This should be a DNS record that points to your server.
+# e.g. afraid.org or another dynamic DNS provider
+#
 variable "dynamic_dns" {
     type = list(string)
     default = ["ipv4-is-about-to-be.strangled.net"]
 }
 
-
+# Don't change
 resource "aws_route53_record" "glass" {
     zone_id     = var.zones.glass
     name        = each.key
@@ -73,6 +92,7 @@ resource "aws_route53_record" "glass" {
     for_each    = toset(var.routes.glass)
 }
 
+# Don't change
 resource "aws_route53_record" "prod" {
     zone_id     = var.zones.prod
     name        = each.key
@@ -82,6 +102,7 @@ resource "aws_route53_record" "prod" {
     for_each    = toset(var.routes.prod)
 }
 
+# Don't change
 resource "aws_route53_record" "glass_txt" {
     zone_id     = var.zones.glass
     name        = ""
@@ -90,6 +111,7 @@ resource "aws_route53_record" "glass_txt" {
     records     = var.txt_records.glass
 }
 
+# Change for custom MX records on dev
 resource "aws_route53_record" "glass_mx" {
     zone_id     = var.zones.glass
     name        = ""
@@ -98,6 +120,7 @@ resource "aws_route53_record" "glass_mx" {
     records     = ["10 mail.tutanota.de"]
 }
 
+# Change for custom DMARC records on dev
 resource "aws_route53_record" "glass_email" {
     zone_id     = var.zones.glass
     name        = each.key
@@ -110,6 +133,7 @@ resource "aws_route53_record" "glass_email" {
     }
 }
 
+# Change for custom DKIM records on dev
 resource "aws_route53_record" "glass_dkim" {
     zone_id     = var.zones.glass
     name        = "${each.key}._domainkey"
