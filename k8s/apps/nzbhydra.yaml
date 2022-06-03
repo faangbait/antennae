@@ -97,6 +97,9 @@ spec:
         - mountPath: /downloads
           name: cfg-nzbwatch
           subPath: "nzb-watch"
+        - mountPath: /torrents
+          name: cfg-torrentwatch
+          subPath: "torrent-watch"
         - mountPath: /config
           name: cfg-nzbhydra
           subPath: "cfg-nzbhydra"
@@ -105,10 +108,15 @@ spec:
             memory: 512Mi
             cpu: "2"
           limits:
-            memory: 2Gi
+            memory: 2Gi # Probably too high on resource limits, I think it uses -Xmx 256
             cpu: "2"
       volumes:
         - name: cfg-nzbwatch
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-torrentwatch
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
