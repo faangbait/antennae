@@ -255,7 +255,7 @@ sudo kubeadm join...
 kubectl create ns metallb
 kubectl config set-context --current --namespace=metallb
 helm repo add metallb https://metallb.github.io/metallb
-helm install metallb metallb/metallb -f k8s/infrastructure/metallb-values.yaml
+helm install metallb metallb/metallb -f infrastructure/metallb-values.yaml
 ```
 
 ## Node 1: Configure Storage (Gluster)
@@ -301,8 +301,23 @@ sudo firewall-cmd --reload
 
 kubectl create ns traefik
 kubectl config set-context --current --namespace=traefik
-helm repo add traefik https://helm.traefik.io/traefik
-helm install traefik traefik/traefik -f k8s/infrastructure/traefik-values.yaml
 
 kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID=XXXXX --from-literal=AWS_SECRET_ACCESS_KEY=XXXXX
+
+helm repo add traefik https://helm.traefik.io/traefik
+helm install traefik traefik/traefik -f infrastructure/traefik-values.yaml
 ```
+
+## Node 1: Install an Application
+Double-check to make sure the SABNZBD IngressRoute Host matches a domain pointing at your IP.
+That's what the terraform scripts are there for.
+```sh
+kubectl apply -f apps/usenet.yaml
+```
+
+## Verify Installation Success (You Hope)
+```sh
+kubectl port-forward $(kubectl get pods --selector "app.kubernetes.io/name=traefik" --output=name) 9000:9000
+```
+Should resolve: http://127.0.0.1:9000/dashboard/
+Should resolve: https://fetch.news.madeof.glass/sabnzbd (or wherever your Host() match points)

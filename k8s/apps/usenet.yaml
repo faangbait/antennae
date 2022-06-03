@@ -67,13 +67,13 @@ spec:
       - name: sabnzbd-web
         image: lscr.io/linuxserver/sabnzbd
         volumeMounts:
-        - mountPath: /data/complete
+        - mountPath: /srv/complete
           name: bulk-complete
           subPath: "nzb-complete"
-        - mountPath: /data/incomplete
+        - mountPath: /srv/incomplete
           name: bulk-incomplete
           subPath: "nzb-incomplete"
-        - mountPath: /data/watch # TODO: Consider changing to configMap
+        - mountPath: /srv/watch # TODO: Consider changing to configMap
           name: cfg-nzbwatch
           subPath: "nzb-watch"
         - mountPath: /config
@@ -82,31 +82,31 @@ spec:
         resources:
           requests:
             memory: 512Mi
-            cpu: 4
+            cpu: "4"
           limits:
             memory: 8Gi
-            cpu: 6
+            cpu: "6"
       volumes:
         - name: bulk-complete
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_bulk
-            readOnly: no
+            readOnly: false
         - name: bulk-incomplete
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_bulk
-            readOnly: no
+            readOnly: false
         - name: cfg-nzbwatch
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
-            readOnly: no
+            readOnly: false
         - name: cfg-sabnzbd
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
-            readOnly: no
+            readOnly: false
 ---
 apiVersion: v1
 kind: Service
