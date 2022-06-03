@@ -41,6 +41,33 @@ spec:
   ports:
   - port: 42
 ---
+# Create Usenet Auth Middleware
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: htpasswd-auth
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: htpasswd-auth
+    app.kubernetes.io/part-of: usenet
+spec:
+  basicAuth:
+    secret: htpasswd-auth-secret
+---
+# Create Usenet Auth Secret
+# htpasswd -nb user password | openssl base64
+apiVersion: v1
+kind: Secret
+metadata:
+  name: htpasswd-auth-secret
+  namespace: usenet
+  labels:
+    app.kubernetes.io/name: htpasswd-auth-secret
+    app.kubernetes.io/part-of: usenet
+data:
+  users: |2
+    c3M6JGFwcjEkYW1BemRYMUgkRXMwOVEubUV2akRON2dOT0ZlajgwLgoK
+---
 # Create SABNZBD Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -49,7 +76,7 @@ metadata:
   namespace: usenet
   labels:
     app.kubernetes.io/name: sabnzbd-deployment
-    app.kubernetes.io/part-of: usenet
+    app.kubernetes.io/part-of: sabnzbd
 spec:
   replicas: 1
   strategy:
@@ -61,7 +88,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: sabnzbd-web
-        app.kubernetes.io/part-of: usenet
+        app.kubernetes.io/part-of: sabnzbd
     spec:
       containers:
       - name: sabnzbd-web
@@ -116,7 +143,7 @@ metadata:
   namespace: usenet
   labels:
     app.kubernetes.io/name: sabnzbd-service
-    app.kubernetes.io/part-of: usenet
+    app.kubernetes.io/part-of: sabnzbd
 spec:
   selector:
     app.kubernetes.io/name: sabnzbd-web
@@ -124,33 +151,7 @@ spec:
     - port: 8080
       name: sabnzbd-service
 ---
-# Create SABNZBD Auth Middleware
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: htpasswd-auth
-  namespace: usenet
-  labels:
-    app.kubernetes.io/name: htpasswd-auth
-    app.kubernetes.io/part-of: usenet
-spec:
-  basicAuth:
-    secret: htpasswd-auth-secret
----
-# Create SABNZBD Auth Secret
-# htpasswd -nb user password | openssl base64
-apiVersion: v1
-kind: Secret
-metadata:
-  name: htpasswd-auth-secret
-  namespace: usenet
-  labels:
-    app.kubernetes.io/name: htpasswd-auth-secret
-    app.kubernetes.io/part-of: usenet
-data:
-  users: |2
-    c3M6JGFwcjEkYW1BemRYMUgkRXMwOVEubUV2akRON2dOT0ZlajgwLgoK
----
+
 # Create SABNZBD IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
@@ -159,7 +160,7 @@ metadata:
   namespace: usenet
   labels:
     app.kubernetes.io/name: sabnzbd-ingress
-    app.kubernetes.io/part-of: usenet
+    app.kubernetes.io/part-of: sabnzbd
 spec:
   entryPoints:
     - websecure
