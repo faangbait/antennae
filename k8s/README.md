@@ -46,6 +46,12 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cl
 exclude=kubelet kubeadm kubectl
 ```
 
+## /etc/NetworkManager/conf.d/calico.conf
+```toml
+[keyfile]
+unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:wireguard.cali
+```
+
 ## Setup Prerequisites
 ```sh
 sudo dnf update -y
@@ -156,8 +162,10 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 
 ## Node 1: Setup Calico CNI
 ```sh
-kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+kubectl create namespace tigera-operator
+
+helm install calico projectcalico/tigera-operator --version v3.23.1 -f k8s/infrastructure/tigera-values.yaml --namespace tigera-operator
+
 ```
 
 ## All Nodes: Join Other Nodes

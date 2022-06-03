@@ -40,9 +40,6 @@ certResolvers:
     email: root@madeof.glass
     dnsChallenge:
       provider: route53
-      resolvers:
-        - 1.1.1.1
-        - 9.9.9.9
     storage: /data/acme.json
 
 securityContext:
