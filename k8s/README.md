@@ -1,4 +1,5 @@
 # K8s Standup on Rocky 8.6
+This documentation assumes you've navigated to this directory in your file tree (`cat README.md` returns this doc).
 
 ## Configure Static Route
 ```md
@@ -158,12 +159,12 @@ export VERSION=
 ```sh
 
 sudo mkdir -p /etc/kubernetes/config
-sudo cp k8s/config.mount/* /etc/kubernetes/config/
+sudo cp config.mount/* /etc/kubernetes/config/
 sudo sed -i "s|REPLACEME|$(head -c 32 /dev/urandom | base64)|g" /etc/kubernetes/config/secret-encryption.yaml
 sudo chmod 600 /etc/kubernetes/config/secret-encryption.yaml
 sudo chown root:root /etc/kubernetes/config/secret-encryption.yaml
 
-sudo kubeadm init --config k8s/infrastructure/cluster-config.yaml --upload-certs
+sudo kubeadm init --config infrastructure/cluster-config.yaml
 
 ```
 
@@ -220,7 +221,7 @@ sudo rsync -aP /etc/kubernetes/admin.conf node1:/home/kube/.kube/config
 sudo rsync -aP /etc/kubernetes/admin.conf node2:/home/kube/.kube/config
 sudo rsync -aP /etc/kubernetes/admin.conf node3:/home/kube/.kube/config
 
-sudo -u kube kubectl taint nodes --all node-role.kubernetes.io/master-
+# sudo -u kube kubectl taint nodes --all node-role.kubernetes.io/master-
 ```
 
 ## All Nodes: Configure permissions
@@ -231,17 +232,12 @@ sudo chmod 600 /home/kube/.kube/config
 ## Reboot All Nodes
 Now's a good time for a reboot. I'm not sure if it's necessary, but 'reboot early and often' is a good rule of thumb when you're about to start debugging networking configs.
 
-## Node 1: Swap to Kube User, Untaint Control Plane
-```sh
-sudo -u kube -s
-kubectl taint nodes --all node-role.kubernetes.io/master-
-```
-
 ## Node 1: Setup Calico CNI
 ```sh
 kubectl create namespace tigera-operator
 
-helm install calico projectcalico/tigera-operator --version v3.23.1 -f k8s/infrastructure/tigera-values.yaml --namespace tigera-operator
+helm repo add projectcalico https://projectcalico.docs.tigera.io/charts
+helm install calico projectcalico/tigera-operator --version v3.23.1 -f infrastructure/tigera-values.yaml --namespace tigera-operator
 
 ```
 
