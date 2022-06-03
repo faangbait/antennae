@@ -16,7 +16,7 @@ export VERSION=1.24
 
 ## /etc/hosts
 ```conf
-10.0.0.254 node1 node1.madeof.glass
+10.0.0.254 node1 node1.madeof.glass k8s-control-plane-lb
 10.0.0.253 node2 node2.madeof.glass
 10.0.0.252 node3 node3.madeof.glass
 ```
@@ -28,14 +28,14 @@ br_netfilter
 ```
 
 ## /etc/sysctl.d/k8s.conf
-```toml
+```ini
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 ```
 
 ## /etc/yum.repos.d/kubernetes.repo
-```toml
+```ini
 [kubernetes]
 name=Kubernetes
 baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
@@ -47,7 +47,7 @@ exclude=kubelet kubeadm kubectl
 ```
 
 ## /etc/NetworkManager/conf.d/calico.conf
-```toml
+```bash
 [keyfile]
 unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:wireguard.cali
 ```
@@ -79,6 +79,40 @@ sudo sysctl --system
 
 ### CRI-O (best option in my opinion)
 CRI-O is the RHEL-oriented option, as it powers OpenShift. But you might run into permission issues when running k8s rootlessly. 
+
+#### /etc/crio/crio.conf
+```toml
+[crio]
+[crio.api]
+[crio.runtime]
+selinux = false
+
+default_capabilities = [
+        "NET_RAW",
+        "CHOWN",
+        "DAC_OVERRIDE",
+        "FSETID",
+        "FOWNER",
+        "SETGID",
+        "SETUID",
+        "SETPCAP",
+        "NET_BIND_SERVICE",
+        "KILL",
+]
+[crio.image]
+[crio.network]
+plugin_dirs = [
+        "/opt/cni/bin",
+        "/usr/libexec/cni",
+]
+[crio.metrics]
+enable_metrics = true
+metrics_port = 9537
+
+[crio.tracing]
+[crio.stats]
+```
+
 ```sh
 sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8/devel:kubic:libcontainers:stable.repo
 
@@ -87,11 +121,11 @@ sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$VERSION
 sudo dnf install -y crio
 sudo systemctl enable --now crio
 
-export KUBE_SOCK=/var/run/crio/crio.sock
+export KUBE_SOCK=unix:///var/run/crio/crio.sock
 ```
 
 ### Containerd (alternative to CRI-O)
-Containerd seems to work in a vacuum, but if you're expecting to use these boxes to run other podman/runc workloads, they might not be fully compatible with containerd.
+Containerd seems to work in a vacuum, but if you're expecting to use these boxes to run other podman/runc workloads, they might not be fully compatible with containerd. You'll need to adjust nodeRegistration in infrastructure/cluster-config.yaml.
 #### /etc/containerd/config.toml
 ```toml
 disabled_plugins=[""]
@@ -106,26 +140,71 @@ sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/dock
 sudo dnf install -y containerd.io
 sudo systemctl enable --now containerd
 
-export KUBE_SOCK=/run/containerd/containerd.sock
+export KUBE_SOCK=unix:///run/containerd/containerd.sock
 ```
 
 
-## Install Kubernetes
+## Install Kubernetes / Helm
 ```sh
-sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-
-sudo systemctl enable --now kubelet
-
-sudo yum versionlock kubelet kubeadm kubectl
-
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+sudo yum versionlock kubelet kubeadm kubectl
+sudo systemctl enable --now kubelet
 
 export VERSION=
 ```
 
 ## Node 1: Bootstrap Cluster
 ```sh
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket $KUBE_SOCK
+
+sudo mkdir -p /etc/kubernetes/config
+sudo cp k8s/config.mount/* /etc/kubernetes/config/
+sudo sed -i "s|REPLACEME|$(head -c 32 /dev/urandom | base64)|g" /etc/kubernetes/config/secret-encryption.yaml
+sudo chmod 600 /etc/kubernetes/config/secret-encryption.yaml
+sudo chown root:root /etc/kubernetes/config/secret-encryption.yaml
+
+sudo kubeadm init --config k8s/infrastructure/cluster-config.yaml --upload-certs
+
+```
+
+## Node 1: Security Check
+```sh
+stat -c %a /etc/kubernetes/manifests/kube-apiserver.yaml # 644 or better
+stat -c %a /etc/kubernetes/manifests/kube-controller-manager.yaml # 644 or better
+stat -c %a /etc/kubernetes/manifests/kube-scheduler.yaml # 644 or better
+stat -c %a /etc/kubernetes/manifests/etcd.yaml # 644 or better
+stat -c %a /etc/kubernetes/admin.conf # 644 or better
+stat -c %a /etc/kubernetes/scheduler.conf # 644 or better
+stat -c %a /etc/kubernetes/controller-manager.conf # 644 or better
+ls -laR /etc/kubernetes/pki/*.crt # 644 or better
+stat -c %a /etc/systemd/system/kubelet.service.d/10-kubeadm.conf # 644 or better
+stat -c %a /etc/kubernetes/kubelet.conf # 644 or better
+
+ls -laR /etc/kubernetes/pki/*.key # 600 or better
+
+stat -c %a /var/lib/etcd # 700 or better
+stat -c %U:%G /etc/kubernetes/manifests/kube-apiserver.yaml # root:root
+stat -c %U:%G /etc/kubernetes/manifests/kube-controller-manager.yaml # root:root
+stat -c %U:%G /etc/kubernetes/manifests/kube-scheduler.yaml # root:root
+stat -c %U:%G /etc/kubernetes/manifests/etcd.yaml # root:root
+stat -c %U:%G /etc/kubernetes/admin.conf # root:root
+stat -c %U:%G /etc/kubernetes/scheduler.conf # root:root
+stat -c %U:%G /etc/kubernetes/controller-manager.conf # root:root
+ls -laR /etc/kubernetes/pki/ # root:root
+stat -c %U:%G /etc/kubernetes/kubelet.conf # root:root
+stat -c %U:%G /etc/systemd/system/kubelet.service.d/10-kubeadm.conf # root:root
+
+stat -c %U:%G /var/lib/etcd # etcd:etcd
+
+# TODO:
+# kubeconfig
+# certificate auth
+# https://cloud.redhat.com/blog/guide-to-kubernetes-ingress-network-policies
+# https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#imagepolicywebhook
+# https://media.defense.gov/2021/Aug/03/2002820425/-1/-1/0/CTR_Kubernetes_Hardening_Guidance_1.1_20220315.PDF
+
+
+
 ```
 
 ## All Nodes: Set up Kube user
@@ -138,9 +217,7 @@ sudo mkdir -p /home/kube/.kube
 ## Node 1: Copy Kube Config / Untaint Control Plane
 ```sh
 sudo rsync -aP /etc/kubernetes/admin.conf node1:/home/kube/.kube/config
-
 sudo rsync -aP /etc/kubernetes/admin.conf node2:/home/kube/.kube/config
-
 sudo rsync -aP /etc/kubernetes/admin.conf node3:/home/kube/.kube/config
 
 sudo -u kube kubectl taint nodes --all node-role.kubernetes.io/master-
