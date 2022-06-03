@@ -1,11 +1,16 @@
 installation:
+  cni:
+    type: Calico
+    ipam:
+      type: Calico
   calicoNetwork:
-    bgp: Disabled
+    bgp: Enabled
     ipPools:
     - cidr: 10.48.0.0/16
       encapsulation: VXLANCrossSubnet
-    nodeAddressAutodetectionV4:
-      interface: "e*"
+
+    # nodeAddressAutodetectionV4:
+    #   interface: "e*"
       #canReach: "10.0.0.1"
     #hostPorts: Disabled
 
