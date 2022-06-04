@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: heimdall
-  namespace: public
+  namespace: home
   labels:
     app.kubernetes.io/name: heimdall
     app.kubernetes.io/part-of: heimdall
@@ -55,7 +55,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: heimdall-service
-  namespace: public
+  namespace: home
   labels:
     app.kubernetes.io/name: heimdall-service
     app.kubernetes.io/part-of: heimdall
@@ -71,7 +71,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: heimdall-ingress
-  namespace: public
+  namespace: home
   labels:
     app.kubernetes.io/name: heimdall-ingress
     app.kubernetes.io/part-of: heimdall
@@ -79,11 +79,11 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`dashboard.public.madeof.glass`)
+    - match: Host(`dashboard.home.madeof.glass`)
       kind: Rule
       middlewares:
       - name: secure-auth
-        namespace: public
+        namespace: home
       services:
         - name: heimdall-service
           port: 80
