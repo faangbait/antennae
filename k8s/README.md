@@ -33,6 +33,12 @@ br_netfilter
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 net.bridge.bridge-nf-call-ip6tables = 1
+net.core.somaxconn                  = 10000
+```
+
+## Disable THP
+```sh
+sudo grub2-editenv - set "$(sudo grub2-editenv - list | grep kernelopts) transparent_hugepage=never"
 ```
 
 ## /etc/yum.repos.d/kubernetes.repo
@@ -306,6 +312,11 @@ kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID=X
 
 helm repo add traefik https://helm.traefik.io/traefik
 helm install traefik traefik/traefik -f infrastructure/traefik-values.yaml
+```
+
+## Node 1: Bootstrap Applications
+```sh
+kubectl apply -f _init/bootstrap.yaml
 ```
 
 ## Node 1: Install an Application
