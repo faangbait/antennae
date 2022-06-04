@@ -1,0 +1,108 @@
+---
+# Create Lidarr Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lidarr
+  namespace: news
+  labels:
+    app.kubernetes.io/name: lidarr
+    app.kubernetes.io/part-of: lidarr
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Notifies you when artists release new music"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lidarr-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lidarr-web
+        app.kubernetes.io/part-of: lidarr
+    spec:
+      containers:
+      - name: lidarr-web
+        image: lscr.io/linuxserver/lidarr
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /downloads
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /music
+          name: bulk-audio
+          subPath: "media/audio"
+        - mountPath: /config
+          name: cfg-lidarr
+          subPath: "cfg/lidarr"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-recent
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-audio
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: cfg-lidarr
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Lidarr Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: lidarr-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: lidarr-service
+    app.kubernetes.io/part-of: lidarr
+spec:
+  selector:
+    app.kubernetes.io/name: lidarr-web
+  ports:
+    - port: 8686
+      name: lidarr-service
+---
+# Create Lidarr IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: lidarr-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: lidarr-ingress
+    app.kubernetes.io/part-of: lidarr
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`audio.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: news
+      services:
+        - name: lidarr-service
+          port: 8686
+  tls:
+    certResolver: letsencrypt

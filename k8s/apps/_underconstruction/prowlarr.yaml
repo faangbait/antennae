@@ -1,0 +1,92 @@
+---
+# Create Prowlarr Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prowlarr
+  namespace: news
+  labels:
+    app.kubernetes.io/name: prowlarr
+    app.kubernetes.io/part-of: prowlarr
+    app.kubernetes.io/release: develop
+  annotations:
+    a8r.io/description: "Indexer manager and proxy for notification engines"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires sabnzbd"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prowlarr-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prowlarr-web
+        app.kubernetes.io/part-of: prowlarr
+    spec:
+      containers:
+      - name: prowlarr-web
+        image: lscr.io/linuxserver/prowlarr:develop
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /config
+          name: cfg-prowlarr
+          subPath: "cfg/prowlarr"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: cfg-prowlarr
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Prowlarr Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: prowlarr-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: prowlarr-service
+    app.kubernetes.io/part-of: prowlarr
+spec:
+  selector:
+    app.kubernetes.io/name: prowlarr-web
+  ports:
+    - port: 9696
+      name: prowlarr-service
+---
+# Create Prowlarr IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prowlarr-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: prowlarr-ingress
+    app.kubernetes.io/part-of: prowlarr
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`conf.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: prowlarr-service
+          port: 9696
+  tls:
+    certResolver: letsencrypt

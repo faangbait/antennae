@@ -1,0 +1,138 @@
+---
+# Create Plex Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex
+  namespace: news
+  labels:
+    app.kubernetes.io/name: plex
+    app.kubernetes.io/part-of: plex
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Delivers multimedia content to devices"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: plex-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: plex-web
+        app.kubernetes.io/part-of: plex
+    spec:
+      containers:
+      - name: plex-web
+        image: lscr.io/linuxserver/plex
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /config
+          name: bulk-library
+          subPath: "plex-library"
+        - mountPath: /tv
+          name: bulk-shorts
+          subPath: "media/shorts"
+        - mountPath: /music
+          name: bulk-audio
+          subPath: "media/audio"
+        - mountPath: /comics
+          name: bulk-zines
+          subPath: "media/zines"
+        - mountPath: /movies
+          name: bulk-videos
+          subPath: "media/videos"
+        - mountPath: /books
+          name: bulk-docs
+          subPath: "media/docs"
+        - mountPath: /dev/dri
+          name: dev-dri
+        securityContext:
+          privileged: true # TODO: Required because we're mounting /dev/dri
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-library
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-shorts
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-audio
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-zines
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-videos
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-docs
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+---
+# Create Plex Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: plex-service
+    app.kubernetes.io/part-of: plex
+spec:
+  selector:
+    app.kubernetes.io/name: plex-web
+  ports:
+    - port: 32400
+      name: plex-service
+---
+# Create Plex IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: plex-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: plex-ingress
+    app.kubernetes.io/part-of: plex
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`ui.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: plex-service
+          port: 32400
+  tls:
+    certResolver: letsencrypt

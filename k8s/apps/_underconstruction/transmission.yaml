@@ -1,0 +1,154 @@
+---
+# Create Transmission Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: news
+  labels:
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/part-of: transmission
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "DHT Peering for File Synchronization"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: transmission-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: transmission-web
+        app.kubernetes.io/part-of: transmission
+    spec:
+      containers:
+      - name: transmission-web
+        image: lscr.io/linuxserver/transmission
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        env:
+        - name: TRANSMISSION_WEB_HOME
+          value: "/combustion-release/"
+        volumeMounts:
+        - mountPath: /downloads
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /watch
+          name: dht-blackhole
+          subPath: "blackhole/dht"
+        - mountPath: /config
+          name: cfg-transmission
+          subPath: "cfg/transmission"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-recent
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: dht-blackhole
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-transmission
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Transmission Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: transmission-service
+    app.kubernetes.io/part-of: transmission
+spec:
+  selector:
+    app.kubernetes.io/name: transmission-web
+  ports:
+    - port: 9091
+      name: transmission-http
+    - port: 51413
+      name: transmission-tcp
+      protocol: TCP
+    - port: 51413
+      name: transmission-udp
+      protocol: UDP
+---
+# Create Transmission IngressRoute - HTTP
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: transmission-http-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: transmission-http-ingress
+    app.kubernetes.io/part-of: transmission
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`xmit.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: transmission-http
+          port: 9091
+  tls:
+    certResolver: letsencrypt
+---
+# Create Transmission IngressRoute - TCP
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: transmission-tcp-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: transmission-tcp-ingress
+    app.kubernetes.io/part-of: transmission
+spec:
+  entryPoints:
+    - dht-tcp
+  routes:
+    - match: HostSNI(`xmit.news.madeof.glass`)
+      kind: Rule
+      services:
+        - name: transmission-tcp
+          port: 51413
+  tls:
+    certResolver: letsencrypt
+---
+# Create Transmission IngressRoute - UDP
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteUDP
+metadata:
+  name: transmission-udp-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: transmission-udp-ingress
+    app.kubernetes.io/part-of: transmission
+spec:
+  entryPoints:
+    - dht-udp
+  routes:
+    - services:
+        - name: transmission-udp
+          port: 51413

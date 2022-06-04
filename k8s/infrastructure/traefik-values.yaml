@@ -20,6 +20,18 @@ ports:
       certResolver: "letsencrypt"
       domains:
         - main: "*.madeof.glass"
+  dht-tcp:
+    port: 51413
+    protocol: TCP
+    tls:
+      enabled: true
+      options: ""
+      certResolver: "letsencrypt"
+      domains:
+        - main: "*.madeof.glass"
+  dht-udp:
+    port: 51413
+    protocol: UDP
 
 service:
   enabled: true

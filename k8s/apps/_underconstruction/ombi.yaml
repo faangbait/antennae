@@ -1,0 +1,92 @@
+---
+# Create Ombi Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ombi
+  namespace: news
+  labels:
+    app.kubernetes.io/name: ombi
+    app.kubernetes.io/part-of: ombi
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Allows users to submit Plex Requests for content"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Requires Plex"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ombi-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ombi-web
+        app.kubernetes.io/part-of: ombi
+    spec:
+      containers:
+      - name: ombi-web
+        image: lscr.io/linuxserver/ombi
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /config
+          name: cfg-ombi
+          subPath: "cfg/ombi"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: cfg-ombi
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Ombi Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ombi-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: ombi-service
+    app.kubernetes.io/part-of: ombi
+spec:
+  selector:
+    app.kubernetes.io/name: ombi-web
+  ports:
+    - port: 3579
+      name: ombi-service
+---
+# Create Ombi IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ombi-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: ombi-ingress
+    app.kubernetes.io/part-of: ombi
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`request.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: ombi-service
+          port: 3579
+  tls:
+    certResolver: letsencrypt

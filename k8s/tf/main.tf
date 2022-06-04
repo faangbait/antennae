@@ -14,6 +14,7 @@ terraform {
 # aws_secret_access_key=
 #
 provider "aws" {
+  profile = "kubernetes"
   region = "us-east-1"
   shared_credentials_file = "~/.aws/credentials"
 }
@@ -29,8 +30,23 @@ variable "routes" {
 
     default = {
         glass = [
+            "auth",
             "fetch.news",
-            "search.news"
+            "search.news",
+            "shorts.news",
+            "videos.news",
+            "docs.news",
+            "zines.news",
+            "audio.news",
+            "conf.news",
+            "etl.news",
+            "mon.news",
+            "request.news",
+            "ui.news",
+            "dashboard.news",
+            "i18n.news",
+            "xmit.news",
+            "library.news"
         ]
         prod = []
     }

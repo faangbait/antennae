@@ -1,0 +1,108 @@
+---
+# Create NZBHydra Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nzbhydra
+  namespace: news
+  labels:
+    app.kubernetes.io/name: nzbhydra
+    app.kubernetes.io/part-of: nzbhydra
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Manages the newsgroup indexers"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires sabnzbd"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nzbhydra-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nzbhydra-web
+        app.kubernetes.io/part-of: nzbhydra
+    spec:
+      containers:
+      - name: nzbhydra-web
+        image: lscr.io/linuxserver/nzbhydra2
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /downloads
+          name: nzb-blackhole
+          subPath: "blackhole/nzb"
+        - mountPath: /torrents
+          name: dht-blackhole
+          subPath: "blackhole/dht"
+        - mountPath: /config
+          name: cfg-nzbhydra
+          subPath: "cfg/nzbhydra"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: nzb-blackhole
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: dht-blackhole
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-nzbhydra
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create NZBHydra Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nzbhydra-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: nzbhydra-service
+    app.kubernetes.io/part-of: nzbhydra
+spec:
+  selector:
+    app.kubernetes.io/name: nzbhydra-web
+  ports:
+    - port: 5076
+      name: nzbhydra-service
+---
+# Create NZBHydra IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nzbhydra-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: nzbhydra-ingress
+    app.kubernetes.io/part-of: nzbhydra
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`search.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: nzbhydra-service
+          port: 5076
+  tls:
+    certResolver: letsencrypt

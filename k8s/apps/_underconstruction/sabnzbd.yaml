@@ -1,0 +1,117 @@
+---
+# Create SABNZBD Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sabnzbd
+  namespace: news
+  labels:
+    app.kubernetes.io/name: sabnzbd
+    app.kubernetes.io/part-of: sabnzbd
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Free and easy binary newsreader"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Requires a Usenet mirror"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sabnzbd-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sabnzbd-web
+        app.kubernetes.io/part-of: sabnzbd
+    spec:
+      containers:
+      - name: sabnzbd-web
+        image: lscr.io/linuxserver/sabnzbd
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /nzb/complete
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /nzb/incomplete
+          name: bulk-pending
+          subPath: "pending/nzb"
+        - mountPath: /nzb/blackhole
+          name: nzb-blackhole
+          subPath: "blackhole/nzb"
+        - mountPath: /config
+          name: cfg-sabnzbd
+          subPath: "cfg/sabnzbd"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "4"
+          limits:
+            memory: 8Gi
+            cpu: "6"
+      volumes:
+        - name: bulk-recent
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-pending
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: nzb-blackhole
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-sabnzbd
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create SABNZBD Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: sabnzbd-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: sabnzbd-service
+    app.kubernetes.io/part-of: sabnzbd
+spec:
+  selector:
+    app.kubernetes.io/name: sabnzbd-web
+  ports:
+    - port: 8080
+      name: sabnzbd-service
+---
+
+# Create SABNZBD IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sabnzbd-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: sabnzbd-ingress
+    app.kubernetes.io/part-of: sabnzbd
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`fetch.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: news
+      services:
+        - name: sabnzbd-service
+          port: 8080
+  tls:
+    certResolver: letsencrypt

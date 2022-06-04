@@ -1,0 +1,92 @@
+---
+# Create Tautulli Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tautulli
+  namespace: news
+  labels:
+    app.kubernetes.io/name: tautulli
+    app.kubernetes.io/part-of: tautulli
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Monitoring and analytics for Plex"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Requires Plex"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tautulli-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tautulli-web
+        app.kubernetes.io/part-of: tautulli
+    spec:
+      containers:
+      - name: tautulli-web
+        image: lscr.io/linuxserver/tautulli
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /config
+          name: cfg-tautulli
+          subPath: "cfg/tautulli"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: cfg-tautulli
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Tautulli Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tautulli-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: tautulli-service
+    app.kubernetes.io/part-of: tautulli
+spec:
+  selector:
+    app.kubernetes.io/name: tautulli-web
+  ports:
+    - port: 8181
+      name: tautulli-service
+---
+# Create Tautulli IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tautulli-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: tautulli-ingress
+    app.kubernetes.io/part-of: tautulli
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`mon.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: tautulli-service
+          port: 8181
+  tls:
+    certResolver: letsencrypt

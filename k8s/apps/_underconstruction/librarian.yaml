@@ -1,0 +1,110 @@
+---
+# Create Librarian Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: librarian
+  namespace: news
+  labels:
+    app.kubernetes.io/name: librarian
+    app.kubernetes.io/part-of: librarian
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Follow authors and grab metadata for digital publications"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: librarian-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: librarian-web
+        app.kubernetes.io/part-of: librarian
+    spec:
+      containers:
+      - name: librarian-web
+        image: lscr.io/linuxserver/lazylibrarian
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        env:
+        - name: DOCKER_MODS
+          value: "linuxserver/calibre-web:calibre|linuxserver/mods:lazylibrarian-ffmpeg"
+        volumeMounts:
+        - mountPath: /downloads
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /books
+          name: bulk-docs
+          subPath: "media/docs"
+        - mountPath: /config
+          name: cfg-librarian
+          subPath: "cfg/librarian"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-recent
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-docs
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: cfg-librarian
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Librarian Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: librarian-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: librarian-service
+    app.kubernetes.io/part-of: librarian
+spec:
+  selector:
+    app.kubernetes.io/name: librarian-web
+  ports:
+    - port: 5299
+      name: librarian-service
+---
+# Create Librarian IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: librarian-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: librarian-ingress
+    app.kubernetes.io/part-of: librarian
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`library.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: librarian-service
+          port: 5299
+  tls:
+    certResolver: letsencrypt

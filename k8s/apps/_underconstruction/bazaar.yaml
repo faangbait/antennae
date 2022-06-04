@@ -1,0 +1,108 @@
+---
+# Create Bazarr Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazarr
+  namespace: news
+  labels:
+    app.kubernetes.io/name: bazarr
+    app.kubernetes.io/part-of: bazarr
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Notifies you when a show can be subtitled"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bazarr-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bazarr-web
+        app.kubernetes.io/part-of: bazarr
+    spec:
+      containers:
+      - name: bazarr-web
+        image: lscr.io/linuxserver/bazarr
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /movies
+          name: bulk-videos
+          subPath: "media/videos"
+        - mountPath: /tv
+          name: bulk-shorts
+          subPath: "media/shorts"
+        - mountPath: /config
+          name: cfg-bazarr
+          subPath: "cfg/bazarr"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-videos
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-shorts
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: cfg-bazarr
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Bazarr Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazarr-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: bazarr-service
+    app.kubernetes.io/part-of: bazarr
+spec:
+  selector:
+    app.kubernetes.io/name: bazarr-web
+  ports:
+    - port: 6767
+      name: bazarr-service
+---
+# Create Bazarr IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: bazarr-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: bazarr-ingress
+    app.kubernetes.io/part-of: bazarr
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`i18n.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: bazarr-service
+          port: 6767
+  tls:
+    certResolver: letsencrypt

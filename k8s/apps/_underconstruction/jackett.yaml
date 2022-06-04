@@ -1,0 +1,100 @@
+---
+# Create Jackett Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jackett
+  namespace: news
+  labels:
+    app.kubernetes.io/name: jackett
+    app.kubernetes.io/part-of: jackett
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Proxy that translates queries from apps into tracker-site-specific http queries"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires one or more *arr services"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jackett-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jackett-web
+        app.kubernetes.io/part-of: jackett
+    spec:
+      containers:
+      - name: jackett-web
+        image: lscr.io/linuxserver/jackett
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /downloads
+          name: dht-blackhole
+          subPath: "blackhole/dht"
+        - mountPath: /config
+          name: cfg-jackett
+          subPath: "cfg/jackett"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: dht-blackhole
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-jackett
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Jackett Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: jackett-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: jackett-service
+    app.kubernetes.io/part-of: jackett
+spec:
+  selector:
+    app.kubernetes.io/name: jackett-web
+  ports:
+    - port: 9117
+      name: jackett-service
+---
+# Create Jackett IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jackett-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: jackett-ingress
+    app.kubernetes.io/part-of: jackett
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`etl.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: jackett-service
+          port: 9117
+  tls:
+    certResolver: letsencrypt

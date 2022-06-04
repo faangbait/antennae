@@ -1,0 +1,108 @@
+---
+# Create Readarr Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: readarr
+  namespace: news
+  labels:
+    app.kubernetes.io/name: readarr
+    app.kubernetes.io/part-of: readarr
+    app.kubernetes.io/release: develop
+  annotations:
+    a8r.io/description: "Notifies you when new books are released"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: readarr-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: readarr-web
+        app.kubernetes.io/part-of: readarr
+    spec:
+      containers:
+      - name: readarr-web
+        image: lscr.io/linuxserver/readarr:develop
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /downloads
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /books
+          name: bulk-docs
+          subPath: "media/docs"
+        - mountPath: /config
+          name: cfg-readarr
+          subPath: "cfg/readarr"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-recent
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-docs
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: cfg-readarr
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Readarr Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: readarr-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: readarr-service
+    app.kubernetes.io/part-of: readarr
+spec:
+  selector:
+    app.kubernetes.io/name: readarr-web
+  ports:
+    - port: 8787
+      name: readarr-service
+---
+# Create Readarr IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: readarr-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: readarr-ingress
+    app.kubernetes.io/part-of: readarr
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`docs.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: readarr-service
+          port: 8787
+  tls:
+    certResolver: letsencrypt

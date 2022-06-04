@@ -1,0 +1,108 @@
+---
+# Create Radarr Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  namespace: news
+  labels:
+    app.kubernetes.io/name: radarr
+    app.kubernetes.io/part-of: radarr
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Notifies you when new movies are released"
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radarr-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radarr-web
+        app.kubernetes.io/part-of: radarr
+    spec:
+      containers:
+      - name: radarr-web
+        image: lscr.io/linuxserver/radarr
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /downloads
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /movies
+          name: bulk-videos
+          subPath: "media/videos"
+        - mountPath: /config
+          name: cfg-radarr
+          subPath: "cfg/radarr"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: bulk-recent
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-videos
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: cfg-radarr
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Radarr Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: radarr-service
+    app.kubernetes.io/part-of: radarr
+spec:
+  selector:
+    app.kubernetes.io/name: radarr-web
+  ports:
+    - port: 7878
+      name: radarr-service
+---
+# Create Radarr IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: radarr-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: radarr-ingress
+    app.kubernetes.io/part-of: radarr
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`videos.news.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: htpasswd-auth
+        namespace: news
+      services:
+        - name: radarr-service
+          port: 7878
+  tls:
+    certResolver: letsencrypt
