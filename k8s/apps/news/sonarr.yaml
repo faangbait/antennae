@@ -81,7 +81,7 @@ spec:
     app.kubernetes.io/name: sonarr-web
   ports:
     - port: 8989
-      name: sonarr-service
+      name: sonarr-http
 ---
 # Create Sonarr IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
@@ -99,10 +99,10 @@ spec:
     - match: Host(`shorts.news.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
+      - name: secure-auth
         namespace: news
       services:
         - name: sonarr-service
-          port: 8989
+          port: sonarr-http
   tls:
     certResolver: letsencrypt

@@ -1,16 +1,16 @@
 ---
-# Create Lidarr Deployment
+# Create Mylar Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lidarr
+  name: mylar
   namespace: news
   labels:
-    app.kubernetes.io/name: lidarr
-    app.kubernetes.io/part-of: lidarr
+    app.kubernetes.io/name: mylar
+    app.kubernetes.io/part-of: mylar
     app.kubernetes.io/release: stable
   annotations:
-    a8r.io/description: "Notifies you when artists release new music"
+    a8r.io/description: "Notifies you when new comics are released"
     a8r.io/owner: "@faangbait"
     a8r.io/repository: "https://github.com/faangbait/antennae"
     a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
@@ -20,16 +20,16 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: lidarr-web
+      app.kubernetes.io/name: mylar-web
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: lidarr-web
-        app.kubernetes.io/part-of: lidarr
+        app.kubernetes.io/name: mylar-web
+        app.kubernetes.io/part-of: mylar
     spec:
       containers:
-      - name: lidarr-web
-        image: lscr.io/linuxserver/lidarr
+      - name: mylar-web
+        image: lscr.io/linuxserver/mylar3
         envFrom:
         - configMapRef:
             name: lsio-conf
@@ -37,12 +37,12 @@ spec:
         - mountPath: /downloads
           name: bulk-recent
           subPath: "recent"
-        - mountPath: /music
-          name: bulk-audio
-          subPath: "media/audio"
+        - mountPath: /comics
+          name: bulk-zines
+          subPath: "media/zines"
         - mountPath: /config
-          name: cfg-lidarr
-          subPath: "cfg/lidarr"
+          name: cfg-mylar
+          subPath: "cfg/mylar"
         resources:
           requests:
             memory: 512Mi
@@ -56,53 +56,53 @@ spec:
             endpoints: glusterfs-cluster
             path: glass_bulk
             readOnly: false
-        - name: bulk-audio
+        - name: bulk-zines
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_bulk
             readOnly: false
-        - name: cfg-lidarr
+        - name: cfg-mylar
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
             readOnly: false
 ---
-# Create Lidarr Service
+# Create Mylar Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: lidarr-service
+  name: mylar-service
   namespace: news
   labels:
-    app.kubernetes.io/name: lidarr-service
-    app.kubernetes.io/part-of: lidarr
+    app.kubernetes.io/name: mylar-service
+    app.kubernetes.io/part-of: mylar
 spec:
   selector:
-    app.kubernetes.io/name: lidarr-web
+    app.kubernetes.io/name: mylar-web
   ports:
-    - port: 8686
-      name: lidarr-service
+    - port: 8090
+      name: mylar-http
 ---
-# Create Lidarr IngressRoute
+# Create Mylar IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: lidarr-ingress
+  name: mylar-ingress
   namespace: news
   labels:
-    app.kubernetes.io/name: lidarr-ingress
-    app.kubernetes.io/part-of: lidarr
+    app.kubernetes.io/name: mylar-ingress
+    app.kubernetes.io/part-of: mylar
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`audio.news.madeof.glass`)
+    - match: Host(`zines.news.madeof.glass`)
       kind: Rule
       middlewares:
       - name: secure-auth
         namespace: news
       services:
-        - name: lidarr-service
-          port: 8686
+        - name: mylar-service
+          port: mylar-http
   tls:
     certResolver: letsencrypt

@@ -65,7 +65,7 @@ spec:
     app.kubernetes.io/name: prowlarr-web
   ports:
     - port: 9696
-      name: prowlarr-service
+      name: prowlarr-http
 ---
 # Create Prowlarr IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
@@ -83,10 +83,10 @@ spec:
     - match: Host(`conf.news.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
+      - name: secure-auth
         namespace: news
       services:
         - name: prowlarr-service
-          port: 9696
+          port: prowlarr-http
   tls:
     certResolver: letsencrypt

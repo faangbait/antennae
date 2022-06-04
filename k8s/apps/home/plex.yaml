@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: plex
-  namespace: news
+  namespace: home
   labels:
     app.kubernetes.io/name: plex
     app.kubernetes.io/part-of: plex
@@ -102,7 +102,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: plex-service
-  namespace: news
+  namespace: home
   labels:
     app.kubernetes.io/name: plex-service
     app.kubernetes.io/part-of: plex
@@ -111,14 +111,14 @@ spec:
     app.kubernetes.io/name: plex-web
   ports:
     - port: 32400
-      name: plex-service
+      name: plex-http
 ---
 # Create Plex IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: plex-ingress
-  namespace: news
+  namespace: home
   labels:
     app.kubernetes.io/name: plex-ingress
     app.kubernetes.io/part-of: plex
@@ -126,13 +126,13 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`ui.news.madeof.glass`)
+    - match: Host(`ui.home.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
-        namespace: news
+      - name: secure-auth
+        namespace: home
       services:
         - name: plex-service
-          port: 32400
+          port: plex-http
   tls:
     certResolver: letsencrypt

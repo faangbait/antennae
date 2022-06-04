@@ -38,15 +38,15 @@ variable "routes" {
             "docs.news",
             "zines.news",
             "audio.news",
+            "library.news",
             "conf.news",
             "etl.news",
-            "mon.news",
-            "request.news",
-            "ui.news",
-            "dashboard.news",
-            "i18n.news",
             "xmit.news",
-            "library.news"
+            "i18n.news",
+            "mon.home",
+            "request.home",
+            "ui.home",
+            "dashboard.public",
         ]
         prod = []
     }

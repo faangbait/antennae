@@ -89,7 +89,7 @@ spec:
     app.kubernetes.io/name: sabnzbd-web
   ports:
     - port: 8080
-      name: sabnzbd-service
+      name: sabnzbd-http
 ---
 
 # Create SABNZBD IngressRoute
@@ -112,6 +112,6 @@ spec:
         namespace: news
       services:
         - name: sabnzbd-service
-          port: 8080
+          port: sabnzbd-http
   tls:
     certResolver: letsencrypt

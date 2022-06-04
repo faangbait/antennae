@@ -107,11 +107,11 @@ spec:
     - match: Host(`xmit.news.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
+      - name: secure-auth
         namespace: news
       services:
-        - name: transmission-http
-          port: 9091
+        - name: transmission-service
+          port: transmission-http
   tls:
     certResolver: letsencrypt
 ---
@@ -129,10 +129,9 @@ spec:
     - dht-tcp
   routes:
     - match: HostSNI(`xmit.news.madeof.glass`)
-      kind: Rule
       services:
-        - name: transmission-tcp
-          port: 51413
+        - name: transmission-service
+          port: transmission-tcp
   tls:
     certResolver: letsencrypt
 ---
@@ -150,5 +149,5 @@ spec:
     - dht-udp
   routes:
     - services:
-        - name: transmission-udp
-          port: 51413
+        - name: transmission-service
+          port: transmission-udp

@@ -34,7 +34,7 @@ spec:
             name: lsio-conf
         env:
         - name: DOCKER_MODS
-          value: "linuxserver/calibre-web:calibre|linuxserver/mods:lazylibrarian-ffmpeg"
+          value: "linuxserver/mods:lazylibrarian-ffmpeg"
         volumeMounts:
         - mountPath: /downloads
           name: bulk-recent
@@ -83,7 +83,7 @@ spec:
     app.kubernetes.io/name: librarian-web
   ports:
     - port: 5299
-      name: librarian-service
+      name: librarian-http
 ---
 # Create Librarian IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
@@ -101,10 +101,10 @@ spec:
     - match: Host(`library.news.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
+      - name: secure-auth
         namespace: news
       services:
         - name: librarian-service
-          port: 5299
+          port: librarian-http
   tls:
     certResolver: letsencrypt

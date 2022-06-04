@@ -1,42 +1,41 @@
 ---
-# Create Ombi Deployment
+# Create Heimdall Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ombi
-  namespace: news
+  name: heimdall
+  namespace: public
   labels:
-    app.kubernetes.io/name: ombi
-    app.kubernetes.io/part-of: ombi
+    app.kubernetes.io/name: heimdall
+    app.kubernetes.io/part-of: heimdall
     app.kubernetes.io/release: stable
   annotations:
-    a8r.io/description: "Allows users to submit Plex Requests for content"
+    a8r.io/description: "Service dashboard / user-friendly frontend"
     a8r.io/owner: "@faangbait"
     a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Requires Plex"
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: ombi-web
+      app.kubernetes.io/name: heimdall-web
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ombi-web
-        app.kubernetes.io/part-of: ombi
+        app.kubernetes.io/name: heimdall-web
+        app.kubernetes.io/part-of: heimdall
     spec:
       containers:
-      - name: ombi-web
-        image: lscr.io/linuxserver/ombi
+      - name: heimdall-web
+        image: lscr.io/linuxserver/heimdall
         envFrom:
         - configMapRef:
             name: lsio-conf
         volumeMounts:
         - mountPath: /config
-          name: cfg-ombi
-          subPath: "cfg/ombi"
+          name: cfg-heimdall
+          subPath: "cfg/heimdall"
         resources:
           requests:
             memory: 512Mi
@@ -45,48 +44,48 @@ spec:
             memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
             cpu: "2"
       volumes:
-        - name: cfg-ombi
+        - name: cfg-heimdall
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
             readOnly: false
 ---
-# Create Ombi Service
+# Create Heimdall Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: ombi-service
-  namespace: news
+  name: heimdall-service
+  namespace: public
   labels:
-    app.kubernetes.io/name: ombi-service
-    app.kubernetes.io/part-of: ombi
+    app.kubernetes.io/name: heimdall-service
+    app.kubernetes.io/part-of: heimdall
 spec:
   selector:
-    app.kubernetes.io/name: ombi-web
+    app.kubernetes.io/name: heimdall-web
   ports:
-    - port: 3579
-      name: ombi-service
+    - port: 80
+      name: heimdall-service
 ---
-# Create Ombi IngressRoute
+# Create Heimdall IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: ombi-ingress
-  namespace: news
+  name: heimdall-ingress
+  namespace: public
   labels:
-    app.kubernetes.io/name: ombi-ingress
-    app.kubernetes.io/part-of: ombi
+    app.kubernetes.io/name: heimdall-ingress
+    app.kubernetes.io/part-of: heimdall
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`request.news.madeof.glass`)
+    - match: Host(`dashboard.public.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
-        namespace: news
+      - name: secure-auth
+        namespace: public
       services:
-        - name: ombi-service
-          port: 3579
+        - name: heimdall-service
+          port: 80
   tls:
     certResolver: letsencrypt

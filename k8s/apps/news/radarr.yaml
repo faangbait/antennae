@@ -1,16 +1,16 @@
 ---
-# Create Mylar Deployment
+# Create Radarr Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mylar
+  name: radarr
   namespace: news
   labels:
-    app.kubernetes.io/name: mylar
-    app.kubernetes.io/part-of: mylar
+    app.kubernetes.io/name: radarr
+    app.kubernetes.io/part-of: radarr
     app.kubernetes.io/release: stable
   annotations:
-    a8r.io/description: "Notifies you when new comics are released"
+    a8r.io/description: "Notifies you when new movies are released"
     a8r.io/owner: "@faangbait"
     a8r.io/repository: "https://github.com/faangbait/antennae"
     a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
@@ -20,16 +20,16 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: mylar-web
+      app.kubernetes.io/name: radarr-web
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: mylar-web
-        app.kubernetes.io/part-of: mylar
+        app.kubernetes.io/name: radarr-web
+        app.kubernetes.io/part-of: radarr
     spec:
       containers:
-      - name: mylar-web
-        image: lscr.io/linuxserver/mylar3
+      - name: radarr-web
+        image: lscr.io/linuxserver/radarr
         envFrom:
         - configMapRef:
             name: lsio-conf
@@ -37,12 +37,12 @@ spec:
         - mountPath: /downloads
           name: bulk-recent
           subPath: "recent"
-        - mountPath: /comics
-          name: bulk-zines
-          subPath: "media/zines"
+        - mountPath: /movies
+          name: bulk-videos
+          subPath: "media/videos"
         - mountPath: /config
-          name: cfg-mylar
-          subPath: "cfg/mylar"
+          name: cfg-radarr
+          subPath: "cfg/radarr"
         resources:
           requests:
             memory: 512Mi
@@ -56,53 +56,53 @@ spec:
             endpoints: glusterfs-cluster
             path: glass_bulk
             readOnly: false
-        - name: bulk-zines
+        - name: bulk-videos
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_bulk
             readOnly: false
-        - name: cfg-mylar
+        - name: cfg-radarr
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
             readOnly: false
 ---
-# Create Mylar Service
+# Create Radarr Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: mylar-service
+  name: radarr-service
   namespace: news
   labels:
-    app.kubernetes.io/name: mylar-service
-    app.kubernetes.io/part-of: mylar
+    app.kubernetes.io/name: radarr-service
+    app.kubernetes.io/part-of: radarr
 spec:
   selector:
-    app.kubernetes.io/name: mylar-web
+    app.kubernetes.io/name: radarr-web
   ports:
-    - port: 8090
-      name: mylar-service
+    - port: 7878
+      name: radarr-http
 ---
-# Create Mylar IngressRoute
+# Create Radarr IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: mylar-ingress
+  name: radarr-ingress
   namespace: news
   labels:
-    app.kubernetes.io/name: mylar-ingress
-    app.kubernetes.io/part-of: mylar
+    app.kubernetes.io/name: radarr-ingress
+    app.kubernetes.io/part-of: radarr
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`zines.news.madeof.glass`)
+    - match: Host(`videos.news.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
+      - name: secure-auth
         namespace: news
       services:
-        - name: mylar-service
-          port: 8090
+        - name: radarr-service
+          port: radarr-http
   tls:
     certResolver: letsencrypt

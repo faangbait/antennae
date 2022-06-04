@@ -1,48 +1,48 @@
 ---
-# Create NZBHydra Deployment
+# Create Lidarr Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nzbhydra
+  name: lidarr
   namespace: news
   labels:
-    app.kubernetes.io/name: nzbhydra
-    app.kubernetes.io/part-of: nzbhydra
+    app.kubernetes.io/name: lidarr
+    app.kubernetes.io/part-of: lidarr
     app.kubernetes.io/release: stable
   annotations:
-    a8r.io/description: "Manages the newsgroup indexers"
+    a8r.io/description: "Notifies you when artists release new music"
     a8r.io/owner: "@faangbait"
     a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Fetching requires sabnzbd"
+    a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: nzbhydra-web
+      app.kubernetes.io/name: lidarr-web
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: nzbhydra-web
-        app.kubernetes.io/part-of: nzbhydra
+        app.kubernetes.io/name: lidarr-web
+        app.kubernetes.io/part-of: lidarr
     spec:
       containers:
-      - name: nzbhydra-web
-        image: lscr.io/linuxserver/nzbhydra2
+      - name: lidarr-web
+        image: lscr.io/linuxserver/lidarr
         envFrom:
         - configMapRef:
             name: lsio-conf
         volumeMounts:
         - mountPath: /downloads
-          name: nzb-blackhole
-          subPath: "blackhole/nzb"
-        - mountPath: /torrents
-          name: dht-blackhole
-          subPath: "blackhole/dht"
+          name: bulk-recent
+          subPath: "recent"
+        - mountPath: /music
+          name: bulk-audio
+          subPath: "media/audio"
         - mountPath: /config
-          name: cfg-nzbhydra
-          subPath: "cfg/nzbhydra"
+          name: cfg-lidarr
+          subPath: "cfg/lidarr"
         resources:
           requests:
             memory: 512Mi
@@ -51,58 +51,58 @@ spec:
             memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
             cpu: "2"
       volumes:
-        - name: nzb-blackhole
+        - name: bulk-recent
           glusterfs:
             endpoints: glusterfs-cluster
-            path: glass_cfg
+            path: glass_bulk
             readOnly: false
-        - name: dht-blackhole
+        - name: bulk-audio
           glusterfs:
             endpoints: glusterfs-cluster
-            path: glass_cfg
+            path: glass_bulk
             readOnly: false
-        - name: cfg-nzbhydra
+        - name: cfg-lidarr
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
             readOnly: false
 ---
-# Create NZBHydra Service
+# Create Lidarr Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: nzbhydra-service
+  name: lidarr-service
   namespace: news
   labels:
-    app.kubernetes.io/name: nzbhydra-service
-    app.kubernetes.io/part-of: nzbhydra
+    app.kubernetes.io/name: lidarr-service
+    app.kubernetes.io/part-of: lidarr
 spec:
   selector:
-    app.kubernetes.io/name: nzbhydra-web
+    app.kubernetes.io/name: lidarr-web
   ports:
-    - port: 5076
-      name: nzbhydra-service
+    - port: 8686
+      name: lidarr-http
 ---
-# Create NZBHydra IngressRoute
+# Create Lidarr IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: nzbhydra-ingress
+  name: lidarr-ingress
   namespace: news
   labels:
-    app.kubernetes.io/name: nzbhydra-ingress
-    app.kubernetes.io/part-of: nzbhydra
+    app.kubernetes.io/name: lidarr-ingress
+    app.kubernetes.io/part-of: lidarr
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`search.news.madeof.glass`)
+    - match: Host(`audio.news.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
+      - name: secure-auth
         namespace: news
       services:
-        - name: nzbhydra-service
-          port: 5076
+        - name: lidarr-service
+          port: lidarr-http
   tls:
     certResolver: letsencrypt

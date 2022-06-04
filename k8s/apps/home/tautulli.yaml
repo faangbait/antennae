@@ -1,41 +1,42 @@
 ---
-# Create Heimdall Deployment
+# Create Tautulli Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: heimdall
-  namespace: news
+  name: tautulli
+  namespace: home
   labels:
-    app.kubernetes.io/name: heimdall
-    app.kubernetes.io/part-of: heimdall
+    app.kubernetes.io/name: tautulli
+    app.kubernetes.io/part-of: tautulli
     app.kubernetes.io/release: stable
   annotations:
-    a8r.io/description: "Service dashboard / user-friendly frontend"
+    a8r.io/description: "Monitoring and analytics for Plex"
     a8r.io/owner: "@faangbait"
     a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/dependencies: "Requires Plex"
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: heimdall-web
+      app.kubernetes.io/name: tautulli-web
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: heimdall-web
-        app.kubernetes.io/part-of: heimdall
+        app.kubernetes.io/name: tautulli-web
+        app.kubernetes.io/part-of: tautulli
     spec:
       containers:
-      - name: heimdall-web
-        image: lscr.io/linuxserver/heimdall
+      - name: tautulli-web
+        image: lscr.io/linuxserver/tautulli
         envFrom:
         - configMapRef:
             name: lsio-conf
         volumeMounts:
         - mountPath: /config
-          name: cfg-heimdall
-          subPath: "cfg/heimdall"
+          name: cfg-tautulli
+          subPath: "cfg/tautulli"
         resources:
           requests:
             memory: 512Mi
@@ -44,48 +45,48 @@ spec:
             memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
             cpu: "2"
       volumes:
-        - name: cfg-heimdall
+        - name: cfg-tautulli
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg
             readOnly: false
 ---
-# Create Heimdall Service
+# Create Tautulli Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: heimdall-service
-  namespace: news
+  name: tautulli-service
+  namespace: home
   labels:
-    app.kubernetes.io/name: heimdall-service
-    app.kubernetes.io/part-of: heimdall
+    app.kubernetes.io/name: tautulli-service
+    app.kubernetes.io/part-of: tautulli
 spec:
   selector:
-    app.kubernetes.io/name: heimdall-web
+    app.kubernetes.io/name: tautulli-web
   ports:
-    - port: 80
-      name: heimdall-service
+    - port: 8181
+      name: tautulli-http
 ---
-# Create Heimdall IngressRoute
+# Create Tautulli IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: heimdall-ingress
-  namespace: news
+  name: tautulli-ingress
+  namespace: home
   labels:
-    app.kubernetes.io/name: heimdall-ingress
-    app.kubernetes.io/part-of: heimdall
+    app.kubernetes.io/name: tautulli-ingress
+    app.kubernetes.io/part-of: tautulli
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`dashboard.news.madeof.glass`)
+    - match: Host(`mon.home.madeof.glass`)
       kind: Rule
       middlewares:
-      - name: htpasswd-auth
-        namespace: news
+      - name: secure-auth
+        namespace: home
       services:
-        - name: heimdall-service
-          port: 80
+        - name: tautulli-service
+          port: tautulli-http
   tls:
     certResolver: letsencrypt
