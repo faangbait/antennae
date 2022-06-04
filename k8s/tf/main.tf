@@ -47,6 +47,7 @@ variable "routes" {
             "request.home",
             "ui.home",
             "dashboard.home",
+            "dashboard.public",
         ]
         prod = []
     }
