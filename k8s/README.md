@@ -1,7 +1,17 @@
 # K8s Standup on Rocky 8.6
+
+## Important
 This documentation assumes you've navigated to this directory in your file tree (`cat README.md` returns this doc).
 
-## Configure Static Route
+Run commands on all nodes unless prefixed with "[CP]" - these should run on a _single_ control-plane node.
+
+## Design Goals
+The goal of this project is to bootstrap a high-availability Kubernetes multi-node and GlusterFS cluster in a challenging environment: bare metal, heterogenous nodes, rootless containers as a critical first step to meeting NSA/CISA guidance for hardened Kubernetes. The project uses declarative provisioning for all resources; nothing was typed in a terminal except what is provided in this README or provisioned using the subfolders.
+
+---
+# Bare Metal Preparation
+## Configure a Static Route
+To enforce network sequestration, the chosen networking plugins operate entirely within L2. For this cluster to be routable externally, we opted to configure a static route from our top-of-rack router.
 ```md
 Static Route: K8s
 Destination Network: 10.0.10.0/24
@@ -10,25 +20,26 @@ Static Route Type: Interface
 Interface: Trusted LAN
 ```
 
-## Set Preferred Kubernetes Version
+## [ALL] Set Preferred Kubernetes Version
 ```sh
 export VERSION=1.24
 ```
 
-## /etc/hosts
+## [ALL] /etc/hosts
+The DNS entry for k8s-control-plane-lb must resolve to either a single control-plane node (shown here) or to a load balancer for control-plane nodes.
 ```conf
 10.0.0.254 node1 node1.madeof.glass k8s-control-plane-lb
 10.0.0.253 node2 node2.madeof.glass
 10.0.0.252 node3 node3.madeof.glass
 ```
 
-## /etc/modules-load.d/k8s.conf
+## [ALL] /etc/modules-load.d/k8s.conf
 ```conf
 overlay
 br_netfilter
 ```
 
-## /etc/sysctl.d/k8s.conf
+## [ALL] /etc/sysctl.d/k8s.conf
 ```ini
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
@@ -36,12 +47,13 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.core.somaxconn                  = 10000
 ```
 
-## Disable THP
+## [ALL] Disable THP
+Necessary for redis, which is used in our authentication app deployment. If you're standing up a non-redis cluster and won't be deploying any of the apps provided in the subfolders, you can skip this.
 ```sh
 sudo grub2-editenv - set "$(sudo grub2-editenv - list | grep kernelopts) transparent_hugepage=never"
 ```
 
-## /etc/yum.repos.d/kubernetes.repo
+## [ALL] /etc/yum.repos.d/kubernetes.repo
 ```ini
 [kubernetes]
 name=Kubernetes
@@ -53,13 +65,13 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cl
 exclude=kubelet kubeadm kubectl
 ```
 
-## /etc/NetworkManager/conf.d/calico.conf
+## [ALL] /etc/NetworkManager/conf.d/calico.conf
 ```bash
 [keyfile]
 unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:wireguard.cali
 ```
 
-## Setup Prerequisites
+## [ALL] Setup Prerequisites
 ```sh
 sudo dnf update -y
 sudo dnf install -y iproute-tc chrony yum-utils yum-plugin-versionlock
@@ -82,12 +94,7 @@ sudo modprobe br_netfilter
 sudo sysctl --system
 ```
 
-## Choose your Adventure: CRI-O or Containerd
-
-### CRI-O (best option in my opinion)
-CRI-O is the RHEL-oriented option, as it powers OpenShift. But you might run into permission issues when running k8s rootlessly. 
-
-#### /etc/crio/crio.conf
+## [ALL] /etc/crio/crio.conf
 ```toml
 [crio]
 [crio.api]
@@ -120,6 +127,9 @@ metrics_port = 9537
 [crio.stats]
 ```
 
+
+## [ALL] Install CRI-O
+CRI-O is the RHEL-supported container engine, as it powers OpenShift. It's designed to play nice with rootless containers.
 ```sh
 sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8/devel:kubic:libcontainers:stable.repo
 
@@ -127,33 +137,12 @@ sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$VERSION
 
 sudo dnf install -y crio
 sudo systemctl enable --now crio
-
-export KUBE_SOCK=unix:///var/run/crio/crio.sock
 ```
 
-### Containerd (alternative to CRI-O)
-Containerd seems to work in a vacuum, but if you're expecting to use these boxes to run other podman/runc workloads, they might not be fully compatible with containerd. You'll need to adjust nodeRegistration in infrastructure/cluster-config.yaml.
-#### /etc/containerd/config.toml
-```toml
-disabled_plugins=[""]
-[plugins."io.containerd.grpc.v1.cri"]
-    systemd_cgroup = true
-
-```
-
-```sh
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-# Remove podman, buildah, runc if this command fails:
-sudo dnf install -y containerd.io
-sudo systemctl enable --now containerd
-
-export KUBE_SOCK=unix:///run/containerd/containerd.sock
-```
-
-
-## Install Kubernetes / Helm
+## [ALL] Install Kubernetes / Helm
 ```sh
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 sudo yum versionlock kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
@@ -161,9 +150,8 @@ sudo systemctl enable --now kubelet
 export VERSION=
 ```
 
-## Node 1: Bootstrap Cluster
+## [CP] Bootstrap Cluster
 ```sh
-
 sudo mkdir -p /etc/kubernetes/config
 sudo cp config.mount/* /etc/kubernetes/config/
 sudo sed -i "s|REPLACEME|$(head -c 32 /dev/urandom | base64)|g" /etc/kubernetes/config/secret-encryption.yaml
@@ -174,7 +162,7 @@ sudo kubeadm init --config infrastructure/cluster-config.yaml
 
 ```
 
-## Node 1: Security Check
+## [CP] Perform Security Check
 ```sh
 stat -c %a /etc/kubernetes/manifests/kube-apiserver.yaml # 644 or better
 stat -c %a /etc/kubernetes/manifests/kube-controller-manager.yaml # 644 or better
@@ -209,36 +197,34 @@ stat -c %U:%G /var/lib/etcd # etcd:etcd
 # https://cloud.redhat.com/blog/guide-to-kubernetes-ingress-network-policies
 # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#imagepolicywebhook
 # https://media.defense.gov/2021/Aug/03/2002820425/-1/-1/0/CTR_Kubernetes_Hardening_Guidance_1.1_20220315.PDF
-
-
-
 ```
 
-## All Nodes: Set up Kube user
+## [ALL] Set up Kube user
 ```sh
 sudo useradd -m kube
 sudo usermod -aG wheel kube
 sudo mkdir -p /home/kube/.kube
 ```
 
-## Node 1: Copy Kube Config / Untaint Control Plane
+## [CP] Copy Kube Config
 ```sh
 sudo rsync -aP /etc/kubernetes/admin.conf node1:/home/kube/.kube/config
 sudo rsync -aP /etc/kubernetes/admin.conf node2:/home/kube/.kube/config
 sudo rsync -aP /etc/kubernetes/admin.conf node3:/home/kube/.kube/config
-
-# sudo -u kube kubectl taint nodes --all node-role.kubernetes.io/master-
 ```
 
-## All Nodes: Configure permissions
+## [ALL] Configure permissions
 ```sh
 sudo chown -R kube:kube /home/kube/.kube
 sudo chmod 600 /home/kube/.kube/config
 ```
-## Reboot All Nodes
+## [ALL] Reboot Nodes
 Now's a good time for a reboot. I'm not sure if it's necessary, but 'reboot early and often' is a good rule of thumb when you're about to start debugging networking configs.
+```sh
+sudo reboot
+```
 
-## Node 1: Setup Calico CNI
+## [CP] Setup Calico CNI
 ```sh
 kubectl create namespace tigera-operator
 
@@ -247,16 +233,15 @@ helm install calico projectcalico/tigera-operator --version v3.23.1 -f infrastru
 
 ```
 
-## All Nodes: Join Other Nodes
+## [ALL] Join Other Nodes
 ```sh
-# On node 1...
-sudo kubeadm token create  --print-join-command
-
-# On each node...
-sudo kubeadm join...
+sudo $(kubeadm token create  --print-join-command)
 ```
 
-## Node 1: Configure MetalLB
+# App Deployment Bootstrap
+
+## Configure MetalLB
+Provides load balancing service between bare-metal nodes.
 ```sh
 kubectl create ns metallb
 kubectl config set-context --current --namespace=metallb
@@ -264,42 +249,8 @@ helm repo add metallb https://metallb.github.io/metallb
 helm install metallb metallb/metallb -f infrastructure/metallb-values.yaml
 ```
 
-## Node 1: Configure Storage (Gluster)
-I'd have preferred to run Ceph, but since I'm hosting the storage cluster on the same bare metal machines as k8s, the container runtime requirements can and will conflict. You'll end up with a dead K8s or a dead Ceph sooner or later. [Gluster Installation Instructions](https://docs.rockylinux.org/guides/file_sharing/glusterfs/).
-```yaml
-# Configure Endpoints
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: glusterfs-cluster
-  namespace: default
-  labels:
-    storage.k8s.io/name: glusterfs
-subsets:
-  - addresses:
-    - ip: 10.0.0.254
-      hostname: node1
-    - ip: 10.0.0.253
-      hostname: node2
-    - ip: 10.0.0.252
-      hostname: node3
-    ports:
-      - port: 1
----
-# Configure Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: glusterfs-cluster
-  namespace: default
-  labels:
-    storage.k8s.io/name: glusterfs
-spec:
-  ports:
-  - port: 1
-```
-
-## Node 1: Configure Traefik
+## Configure Traefik
+Provides reverse proxy into cluster.
 ```sh
 sudo firewall-cmd --permanent --add-port=443/tcp
 sudo firewall-cmd --permanent --add-port=9000/tcp
@@ -314,21 +265,19 @@ helm repo add traefik https://helm.traefik.io/traefik
 helm install traefik traefik/traefik -f infrastructure/traefik-values.yaml
 ```
 
-## Node 1: Bootstrap Applications
-```sh
-kubectl apply -f _init/bootstrap.yaml
-```
+## Consider Installing Bootstraps Provided in _init Subfolder
+These are highly workflow-dependent, but this is what I use.
+- __Namespaces__: we don't want to provision these from inside a yaml file that we'd later accidentally `kubectl delete`, so I do them all at once here.
+- __Storage__: I'd have preferred to run Ceph, but since I'm hosting the storage cluster on the same bare metal machines as k8s, the container runtime requirements can and will conflict. You'll end up with a dead K8s or a dead Ceph sooner or later. [Gluster Installation Instructions](https://docs.rockylinux.org/guides/file_sharing/glusterfs/).
+- __Authentication__: I selected Authelia as a universal authentication layer.
+- __Config__: Universal ConfigMaps that should be applied to all namespaces.
 
-## Node 1: Install an Application
-Double-check to make sure the SABNZBD IngressRoute Host matches a domain pointing at your IP.
-That's what the terraform scripts are there for.
 ```sh
-kubectl apply -f apps/usenet.yaml
+kubectl apply -f _init
 ```
 
 ## Verify Installation Success (You Hope)
+Should resolve: http://127.0.0.1:9000/dashboard/
 ```sh
 kubectl port-forward $(kubectl get pods --selector "app.kubernetes.io/name=traefik" --output=name) 9000:9000
 ```
-Should resolve: http://127.0.0.1:9000/dashboard/
-Should resolve: https://fetch.news.madeof.glass/sabnzbd (or wherever your Host() match points)
