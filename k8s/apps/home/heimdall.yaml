@@ -64,7 +64,7 @@ spec:
     app.kubernetes.io/name: heimdall-web
   ports:
     - port: 80
-      name: heimdall-service
+      name: heimdall-http
 ---
 # Create Heimdall IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
@@ -86,6 +86,6 @@ spec:
         namespace: home
       services:
         - name: heimdall-service
-          port: 80
+          port: heimdall-http
   tls:
     certResolver: letsencrypt
