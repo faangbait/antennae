@@ -32,23 +32,34 @@ spec:
         envFrom:
         - configMapRef:
             name: lsio-conf
+        env:
+          - name: VERSION
+            value: docker
+          - name: HOSTNAME
+            value: plex-service
+          - name: PLEX_CLAIM # Get yours at: https://www.plex.tv/claim/
+            value: claim-J42yEQsQTxe33Ebnc5rL
+          - name: ADVERTISE_IP
+            value: https://ui.home.madeof.glass/
+          - name: ALLOWED_NETWORKS 
+            value: 10.0.0.0/8
         volumeMounts:
         - mountPath: /config
           name: bulk-library
           subPath: "plex-library"
-        - mountPath: /tv
+        - mountPath: /data/tv
           name: bulk-shorts
           subPath: "media/shorts"
-        - mountPath: /music
+        - mountPath: /data/music
           name: bulk-audio
           subPath: "media/audio"
-        - mountPath: /comics
+        - mountPath: /data/comics
           name: bulk-zines
           subPath: "media/zines"
-        - mountPath: /movies
+        - mountPath: /data/movies
           name: bulk-videos
           subPath: "media/videos"
-        - mountPath: /books
+        - mountPath: /data/books
           name: bulk-docs
           subPath: "media/docs"
         - mountPath: /dev/dri
@@ -112,6 +123,34 @@ spec:
   ports:
     - port: 32400
       name: plex-http
+    - port: 1900
+      name: plex-dlna-udp
+      protocol: UDP
+    - port: 3005
+      name: plex-something
+      protocol: TCP
+    - port: 5353
+      name: plex-bonjour
+      protocol: UDP
+    - port: 8324
+      name: plex-companion
+      protocol: TCP
+    - port: 32410
+      name: plex-gdm1
+      protocol: UDP
+    - port: 32412
+      name: plex-gdm2
+      protocol: UDP
+    - port: 32413
+      name: plex-gdm3
+      protocol: UDP
+    - port: 32414
+      name: plex-gdm4
+      protocol: UDP
+    - port: 32469
+      name: plex-dlna-tcp
+      protocol: TCP
+    
 ---
 # Create Plex IngressRoute
 apiVersion: traefik.containo.us/v1alpha1
