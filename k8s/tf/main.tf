@@ -48,6 +48,7 @@ variable "routes" {
             "ui.home",
             "dashboard.home",
             "dashboard.public",
+            "blog.public",
         ]
         prod = []
     }

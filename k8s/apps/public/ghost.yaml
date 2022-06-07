@@ -1,0 +1,89 @@
+# Create Ghost Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+  namespace: public
+  labels:
+    app.kubernetes.io/name: ghost
+    app.kubernetes.io/part-of: ghost
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Ghost is a free and open source blogging platform written in JavaScript and distributed under the MIT License, designed to simplify the process of online publishing for individual bloggers as well as online publications."
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangabit/antennae"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ghost-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ghost-web
+        app.kubernetes.io/part-of: ghost
+    spec:
+      containers:
+      - name: ghost-web
+        image: docker.io/library/ghost
+        env:
+          - name: url
+            value: https://blog.public.madeof.glass/
+        volumeMounts:
+        - mountPath: /var/lib/ghost/content
+          name: cfg-ghost
+          subPath: cfg/ghost
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "1"
+          limits:
+            memory: 2Gi
+            cpu: "2"
+      volumes:
+        - name: cfg-ghost
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create Ghost Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghost-service
+  namespace: public
+  labels:
+    app.kubernetes.io/name: ghost-service
+    app.kubernetes.io/part-of: ghost
+spec:
+  selector:
+    app.kubernetes.io/name: ghost-web
+  ports:
+    - port: 2368
+      name: ghost-http
+
+---
+# Create Ghost IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ghost-ingress
+  namespace: public
+  labels:
+    app.kubernetes.io/name: ghost-ingress
+    app.kubernetes.io/part-of: ghost
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`blog.public.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: public
+      services:
+        - name: ghost-service
+          port: ghost-http
+  tls:
+    certResolver: letsencrypt
