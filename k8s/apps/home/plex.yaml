@@ -150,7 +150,8 @@ spec:
     - port: 32469
       name: plex-dlna-tcp
       protocol: TCP
-    
+  type: LoadBalancer
+  
 ---
 # Create Plex IngressRoute
 apiVersion: traefik.containo.us/v1alpha1

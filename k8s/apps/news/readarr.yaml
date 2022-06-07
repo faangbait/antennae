@@ -48,8 +48,8 @@ spec:
             memory: 512Mi
             cpu: "2"
           limits:
-            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
-            cpu: "2"
+            memory: 4Gi
+            cpu: "4"
       volumes:
         - name: bulk-recent
           glusterfs:

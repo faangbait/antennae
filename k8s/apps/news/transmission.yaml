@@ -90,6 +90,7 @@ spec:
     - port: 51413
       name: transmission-udp
       protocol: UDP
+  type: LoadBalancer
 ---
 # Create Transmission IngressRoute - HTTP
 apiVersion: traefik.containo.us/v1alpha1

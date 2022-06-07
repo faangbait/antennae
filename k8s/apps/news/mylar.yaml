@@ -43,6 +43,9 @@ spec:
         - mountPath: /config
           name: cfg-mylar
           subPath: "cfg/mylar"
+        - mountPath: /torrents
+          name: dht-blackhole
+          subPath: "blackhole/dht"
         resources:
           requests:
             memory: 512Mi
@@ -62,6 +65,11 @@ spec:
             path: glass_bulk
             readOnly: false
         - name: cfg-mylar
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: dht-blackhole
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_cfg

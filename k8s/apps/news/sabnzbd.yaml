@@ -51,8 +51,8 @@ spec:
             memory: 512Mi
             cpu: "4"
           limits:
-            memory: 8Gi
-            cpu: "6"
+            memory: 20Gi
+            cpu: "12"
       volumes:
         - name: bulk-recent
           glusterfs:
