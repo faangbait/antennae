@@ -40,6 +40,9 @@ spec:
         - mountPath: /books
           name: bulk-docs
           subPath: "media/docs"
+        - mountPath: /audiobooks
+          name: bulk-spoken
+          subPath: "media/docs-spoken"
         - mountPath: /config
           name: cfg-readarr
           subPath: "cfg/readarr"
@@ -57,6 +60,11 @@ spec:
             path: glass_bulk
             readOnly: false
         - name: bulk-docs
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-spoken
           glusterfs:
             endpoints: glusterfs-cluster
             path: glass_bulk

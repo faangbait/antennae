@@ -34,7 +34,7 @@ spec:
             name: lsio-conf
         env:
         - name: TRANSMISSION_WEB_HOME
-          value: "/combustion-release/"
+          value: "/flood-for-transmission/"
         volumeMounts:
         - mountPath: /downloads
           name: bulk-recent
@@ -50,7 +50,7 @@ spec:
             memory: 512Mi
             cpu: "2"
           limits:
-            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            memory: 1Gi
             cpu: "2"
       volumes:
         - name: bulk-recent
