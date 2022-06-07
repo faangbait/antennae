@@ -47,8 +47,11 @@ variable "routes" {
             "request.home",
             "ui.home",
             "dashboard.home",
+            "files.home",
+            "rss.home",
             "dashboard.public",
             "blog.public",
+            "kb.public",
         ]
         prod = []
     }

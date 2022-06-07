@@ -1,0 +1,103 @@
+---
+# Create DoubleCommander Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doublecommander
+  namespace: news
+  labels:
+    app.kubernetes.io/name: doublecommander
+    app.kubernetes.io/part-of: doublecommander
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Double Commander is a free cross platform open source file manager with two panels side by side. It is inspired by Total Commander and features some new ideas."
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangbait/antennae"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: doublecommander-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: doublecommander-web
+        app.kubernetes.io/part-of: doublecommander
+    spec:
+      containers:
+      - name: doublecommander-web
+        image: lscr.io/linuxserver/doublecommander
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /config
+          name: cfg-doublecommander
+          subPath: "cfg/doublecommander"
+        - mountPath: /storage/config
+          name: storage-config
+        - mountPath: /storage/bulk
+          name: storage-bulk
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 1Gi # Probably too high on resource limits, I think it uses -Xmx 256
+            cpu: "2"
+      volumes:
+        - name: storage-bulk
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: storage-config
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: cfg-doublecommander
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create doublecommander Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: doublecommander-service
+  namespace: news
+  labels:
+    app.kubernetes.io/name: doublecommander-service
+    app.kubernetes.io/part-of: doublecommander
+spec:
+  selector:
+    app.kubernetes.io/name: doublecommander-web
+  ports:
+    - port: 3000
+      name: doublecommander-http
+---
+# Create doublecommander IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: doublecommander-ingress
+  namespace: news
+  labels:
+    app.kubernetes.io/name: doublecommander-ingress
+    app.kubernetes.io/part-of: doublecommander
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`files.home.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: news
+      services:
+        - name: doublecommander-service
+          port: doublecommander-http
+  tls:
+    certResolver: letsencrypt

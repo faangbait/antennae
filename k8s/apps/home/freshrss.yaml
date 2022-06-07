@@ -1,0 +1,89 @@
+# Create FreshRSS Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freshrss
+  namespace: public
+  labels:
+    app.kubernetes.io/name: freshrss
+    app.kubernetes.io/part-of: freshrss
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Freshrss is a free, self-hostable aggregator for rss feeds."
+    a8r.io/owner: "@faangbait"
+    a8r.io/repository: "https://github.com/faangabit/antennae"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: freshrss-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: freshrss-web
+        app.kubernetes.io/part-of: freshrss
+    spec:
+      containers:
+      - name: freshrss-web
+        image: lscr.io/linuxserver/freshrss
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        volumeMounts:
+        - mountPath: /config
+          name: cfg-freshrss
+          subPath: cfg/freshrss
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "1"
+          limits:
+            memory: 2Gi
+            cpu: "2"
+      volumes:
+        - name: cfg-freshrss
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+---
+# Create freshrss Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: freshrss-service
+  namespace: public
+  labels:
+    app.kubernetes.io/name: freshrss-service
+    app.kubernetes.io/part-of: freshrss
+spec:
+  selector:
+    app.kubernetes.io/name: freshrss-web
+  ports:
+    - port: 80
+      name: freshrss-http
+
+---
+# Create freshrss IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: freshrss-ingress
+  namespace: public
+  labels:
+    app.kubernetes.io/name: freshrss-ingress
+    app.kubernetes.io/part-of: freshrss
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`rss.home.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: public
+      services:
+        - name: freshrss-service
+          port: freshrss-http
+  tls:
+    certResolver: letsencrypt
