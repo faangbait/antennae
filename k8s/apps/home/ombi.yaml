@@ -11,9 +11,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Allows users to submit Plex Requests for content"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Requires Plex"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-ombi"
 spec:
   replicas: 1
   strategy:

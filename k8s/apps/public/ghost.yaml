@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Ghost is a free and open source blogging platform written in JavaScript and distributed under the MIT License, designed to simplify the process of online publishing for individual bloggers as well as online publications."
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangabit/antennae"
+    a8r.io/owner: "@docker-library"
+    a8r.io/repository: "https://github.com/docker-library/ghost"
 spec:
   replicas: 1
   selector:

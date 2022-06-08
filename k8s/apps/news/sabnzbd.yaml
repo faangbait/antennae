@@ -11,9 +11,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Free and easy binary newsreader"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Requires a Usenet mirror"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-sabnzbd"
 spec:
   replicas: 1
   strategy:

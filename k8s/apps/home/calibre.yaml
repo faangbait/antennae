@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Calibre is a powerful and easy to use e-book manager. "
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangabit/antennae"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-calibre"
 spec:
   replicas: 1
   selector:

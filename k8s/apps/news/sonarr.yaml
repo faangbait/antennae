@@ -11,9 +11,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Notifies you when new TV Shows are released"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Fetching requires sabnzbd, querying requires Jackett"
+    a8r.io/owner: "@sonarr"
+    a8r.io/repository: "https://github.com/linuxserver/docker-sonarr"
 spec:
   replicas: 1
   strategy:

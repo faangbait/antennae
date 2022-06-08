@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "DHT Peering for File Synchronization"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-transmission"
 spec:
   replicas: 1
   strategy:

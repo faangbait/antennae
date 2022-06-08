@@ -11,9 +11,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Manages the newsgroup indexers"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Fetching requires sabnzbd"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-nzbhydra2"
 spec:
   replicas: 1
   strategy:

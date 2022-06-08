@@ -62,8 +62,8 @@ metadata:
     app.kubernetes.io/release: nightly
   annotations:
     a8r.io/description: "Service dashboard / user-friendly frontend"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
+    a8r.io/owner: "@bastienwirtz"
+    a8r.io/repository: "https://github.com/bastienwirtz/homer"
 spec:
   replicas: 1
   strategy:

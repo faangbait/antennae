@@ -11,9 +11,8 @@ metadata:
     app.kubernetes.io/release: develop
   annotations:
     a8r.io/description: "Indexer manager and proxy for notification engines"
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangbait/antennae"
-    a8r.io/dependencies: "Fetching requires sabnzbd"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-prowlarr"
 spec:
   replicas: 1
   strategy:

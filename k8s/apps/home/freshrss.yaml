@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/release: stable
   annotations:
     a8r.io/description: "Freshrss is a free, self-hostable aggregator for rss feeds."
-    a8r.io/owner: "@faangbait"
-    a8r.io/repository: "https://github.com/faangabit/antennae"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-freshrss"
 spec:
   replicas: 1
   selector:
