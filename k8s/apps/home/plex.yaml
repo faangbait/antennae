@@ -1,3 +1,11 @@
+# Plex configuration notes:
+#
+# Settings -> Network -> Show Advanced
+# [x] enable local network discovery (GDM)
+# LAN Networks: 10.0.0.0/8
+# [x] Treat WAN IP as LAN Bandwidth
+# [X] Enable Relay <- I'd really prefer this to not be checked, but it doesn't seem to be an issue.
+#
 ---
 # Create Plex Deployment
 apiVersion: apps/v1
@@ -35,18 +43,19 @@ spec:
         env:
           - name: VERSION
             value: docker
-          - name: HOSTNAME
-            value: plex-service
-          - name: PLEX_CLAIM # Get yours at: https://www.plex.tv/claim/
-            value: claim-J42yEQsQTxe33Ebnc5rL
+          # NOTE: You must PortForward to localhost and access the web interface from localhost on first run
+          # Otherwise, your server may not adopt correctly.
+          # Get your token at: https://www.plex.tv/claim/
+          - name: PLEX_CLAIM 
+            value: claim-CEoqZkkqiuaETt87EM2R
           - name: ADVERTISE_IP
-            value: https://ui.home.madeof.glass/
+            value: http://10.0.10.128:32400
           - name: ALLOWED_NETWORKS 
             value: 10.0.0.0/8
         volumeMounts:
         - mountPath: /config
-          name: bulk-library
-          subPath: "plex-library"
+          name: cfg-library
+          subPath: "cfg/plex"
         - mountPath: /data/tv
           name: bulk-shorts
           subPath: "media/shorts"
@@ -64,6 +73,8 @@ spec:
           subPath: "media/docs"
         - mountPath: /dev/dri
           name: dev-dri
+        - mountPath: /transcode
+          name: tmpfs
         securityContext:
           privileged: true # TODO: Required because we're mounting /dev/dri
         resources:
@@ -74,10 +85,10 @@ spec:
             memory: 12Gi
             cpu: "12"
       volumes:
-        - name: bulk-library
+        - name: cfg-library
           glusterfs:
             endpoints: glusterfs-cluster
-            path: glass_bulk
+            path: glass_cfg
             readOnly: false
         - name: bulk-shorts
           glusterfs:
@@ -107,6 +118,9 @@ spec:
         - name: dev-dri
           hostPath:
             path: /dev/dri
+        - name: tmpfs
+          emptyDir:
+            medium: Memory
 ---
 # Create Plex Service
 apiVersion: v1
@@ -171,8 +185,11 @@ spec:
       middlewares:
       - name: secure-auth
         namespace: home
+      # - name: plex-headers
+        # namespace: home
       services:
         - name: plex-service
           port: plex-http
+          passHostHeader: false
   tls:
     certResolver: letsencrypt

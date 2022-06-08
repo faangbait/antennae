@@ -43,7 +43,7 @@ variable "routes" {
             # "etl.news",
             "xmit.news",
             "i18n.news",
-            # "mon.home",
+            "mon.home",
             "request.home",
             "ui.home",
             "dashboard.home",
