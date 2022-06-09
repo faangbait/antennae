@@ -1,0 +1,15 @@
+asgiref==3.5.2
+beautifulsoup4==4.11.1
+chess==1.9.1
+-e git+https://github.com/django/django.git@49b470b9187b6be60e573fed08c8f4a87f133750#egg=Django
+django-bootstrap-v5==1.0.11
+django-filter==21.1
+djangorestframework==3.13.1
+Markdown==3.3.7
+mock==4.0.3
+Pillow==9.1.1
+python-chess==1.999
+pytz==2022.1
+soupsieve==2.3.2.post1
+sqlparse==0.4.2
+xxhash==3.0.0
