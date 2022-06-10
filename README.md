@@ -1,1 +1,9 @@
-Hello world
+# My Repository Design Goals: Helpfulness, Warmth, and Sharing.
+
+My repository lay in silence, and it was a silence of three parts.
+
+The most obvious part was the silence of thousands of toolchains fulfilling their programmers' wishes without further instruction. Like the silence of a raft on the ocean, surrounded by an endless expanse with unfathomable depths, its undercurrents are not opaque -- anyone brave enough to open their eyes beneath the surface may do so. Yet, instead of competing, our tools cooperate. Despite the infinite power granted to us to disrupt other developers' workflows so that we "win," we chose to make things that improve their performance. We help each other even though we all apply to the same jobs, compete for the same promotions, and bill the same clients; that's just our nature.
+
+At my repository, we congregate to swap knowledge and build new toys. Because a line of code knows no bounds and no censors, it's simply irrelevant how other maintainers identify in terms of age, race, gender, or political affiliation. The more useful labels are those we assign to ourselves: RedHat or Debian? A fan of systemd, or not? It's by these new labels we are reminded that a home and a hearth are waiting for each of us, and our future friends are already there, awaiting our arrival. This is the silence of a seat near a crackling fire, the silence of warmth.
+
+Last, but not least, my repository promotes a simple idea so innately obvious to each of us that it hardly deserves a footnote: sharing code. Most new participants join our community to use our existing code and may conclude that, if we play nice with each other, being able to copy and paste great code into our application is our reward. Such misunderstandings deserve correction. Helpfulness and warmth do not precede but follow the act of releasing code without restrictive licenses, for this is the third silence and the cornerstone of peace and prosperity. You may be lucky enough to hear it if you listen closely: it sounds like the beating heart of freedom.
