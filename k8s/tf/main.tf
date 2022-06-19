@@ -46,6 +46,7 @@ variable "routes" {
             "mon.home",
             "request.home",
             "ui.home",
+            "screen.home",
             "dashboard.home",
             "files.home",
             "rss.home",

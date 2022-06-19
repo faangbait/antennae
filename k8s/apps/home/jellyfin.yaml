@@ -1,0 +1,161 @@
+# Create Jellyfin Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: home
+  labels:
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/part-of: jellyfin
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Delivers multimedia content to devices"
+    a8r.io/owner: "@linuxserver"
+    a8r.io/repository: "https://github.com/linuxserver/docker-jellyfin"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jellyfin-web
+        app.kubernetes.io/part-of: jellyfin
+    spec:
+      containers:
+      - name: jellyfin-web
+        image: lscr.io/linuxserver/jellyfin
+        envFrom:
+        - configMapRef:
+            name: lsio-conf
+        env:
+          - name: JELLYFIN_PublishedServerUrl
+            value: 10.0.10.131
+        volumeMounts:
+        - mountPath: /config
+          name: cfg-library
+          subPath: "cfg/jellyfin"
+        - mountPath: /data/tv
+          name: bulk-shorts
+          subPath: "media/shorts"
+        - mountPath: /data/music
+          name: bulk-audio
+          subPath: "media/audio"
+        - mountPath: /data/comics
+          name: bulk-zines
+          subPath: "media/zines"
+        - mountPath: /data/movies
+          name: bulk-videos
+          subPath: "media/videos"
+        - mountPath: /data/books
+          name: bulk-docs
+          subPath: "media/docs"
+        - mountPath: /data/audiobooks
+          name: bulk-spoken
+          subPath: "media/docs-spoken"
+        - mountPath: /dev/dri
+          name: dev-dri
+        - mountPath: /transcode
+          name: tmpfs
+        securityContext:
+          privileged: true # TODO: Required because we're mounting /dev/dri
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "2"
+          limits:
+            memory: 12Gi
+            cpu: "12"
+      volumes:
+        - name: cfg-library
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: bulk-shorts
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-audio
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-zines
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-videos
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-docs
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: bulk-spoken
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+        - name: tmpfs
+          emptyDir:
+            medium: Memory
+---
+# Create jellyfin Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin-service
+  namespace: home
+  labels:
+    app.kubernetes.io/name: jellyfin-service
+    app.kubernetes.io/part-of: jellyfin
+spec:
+  selector:
+    app.kubernetes.io/name: jellyfin-web
+  ports:
+    - port: 8096
+      name: jellyfin-http
+    - port: 7359
+      name: jellyfin-bonjour
+      protocol: UDP
+    - port: 1900
+      name: jellyfin-dnla
+      protocol: UDP
+  type: LoadBalancer
+  
+---
+# Create jellyfin IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jellyfin-ingress
+  namespace: home
+  labels:
+    app.kubernetes.io/name: jellyfin-ingress
+    app.kubernetes.io/part-of: jellyfin
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`screen.home.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: home
+      services:
+        - name: jellyfin-service
+          port: jellyfin-http
+  tls:
+    certResolver: letsencrypt
