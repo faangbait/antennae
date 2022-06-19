@@ -32,7 +32,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: secure-auth
-  namespace: gitlab
+  namespace: lab
   labels:
     app.kubernetes.io/name: secure-auth
     app.kubernetes.io/part-of: core
@@ -209,6 +209,8 @@ data:
       - domain: '*.home.madeof.glass'
         policy: one_factor
       - domain: '*.public.madeof.glass'
+        policy: bypass
+      - domain: 'screen.home.madeof.glass'
         policy: bypass
     authentication_backend:
       file:

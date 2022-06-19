@@ -28,7 +28,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: lsio-conf
-  namespace: gitlab
+  namespace: lab
   labels:
     app.kubernetes.io/name: lsio-conf
     app.kubernetes.io/part-of: core

@@ -9,14 +9,14 @@
 # It's okay to apply this regularly; it's non-breaking.
 #
 ##### NAMESPACES ###############################################################
-# Core Namespaces: gitlab, antennae, archives, vault, home, news, public
+# Core Namespaces: lab, antennae, archives, vault, home, news, public
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: gitlab
+  name: lab
   labels:
-    app.kubernetes.io/part-of: gitlab
+    app.kubernetes.io/part-of: lab
   annotations:
     a8r.io/description: "Contains all the moving parts of a CI/CD pipeline, plus a sandbox environment for app deployment."
     a8r.io/owner: "@faangbait"
