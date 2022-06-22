@@ -1,0 +1,198 @@
+# Create Storjnode Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storjnode
+  namespace: public
+  labels:
+    app.kubernetes.io/name: storjnode
+    app.kubernetes.io/part-of: storjnode
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: "Storjnode is a custom build of the Storj coin's operational assets"
+    a8r.io/owner: "@storjlabs"
+    a8r.io/repository: "https://github.com/storj/storj"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: storjnode
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: storjnode
+        app.kubernetes.io/part-of: storjnode
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: storjnode
+        image: docker.io/storjlabs/storagenode:latest
+        env:
+          - name: ADDRESS
+            value: storj.public.madeof.glass:28967
+          - name: STORAGE
+            value: 1TB
+          - name: WALLET
+            value: "0xe6367b2C4FE87536614f98701746fa2c7468f20c"
+        volumeMounts:
+        - mountPath: /app/identity
+          name: cfg-storjnode
+          subPath: cfg/crypto/storagenode
+        - mountPath: /app/config
+          name: bulk-storjnode
+          subPath: crypto/storj
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: "2"
+          limits:
+            memory: 4Gi
+            cpu: "2"
+      volumes:
+        - name: cfg-storjnode
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: bulk-storjnode
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+---
+# Create Storjnode Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: storjnode-setup
+  namespace: public
+  labels:
+    app.kubernetes.io/name: storjnode-setup
+    app.kubernetes.io/part-of: storjnode
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: storjnode-setup
+        image: docker.io/storjlabs/storagenode:latest
+        env:
+          - name: SETUP
+            value: "true"
+        volumeMounts:
+        - mountPath: /app/identity
+          name: cfg-storjnode
+          subPath: cfg/crypto/storagenode
+        - mountPath: /app/config
+          name: bulk-storjnode
+          subPath: crypto/storj
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: "2"
+          limits:
+            memory: 4Gi
+            cpu: "2"
+      volumes:
+        - name: cfg-storjnode
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: bulk-storjnode
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+      restartPolicy: Never
+  backoffLimit: 4
+---
+# Create Storjnode Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: storjnode-service
+  namespace: public
+  labels:
+    app.kubernetes.io/name: storjnode-service
+    app.kubernetes.io/part-of: storjnode
+spec:
+  selector:
+    app.kubernetes.io/name: storjnode
+  ports:
+    - port: 28967
+      protocol: TCP
+      name: storjnode-tcp
+    - port: 28967
+      protocol: UDP
+      name: storjnode-udp
+    - port: 14002
+      name: storjnode-http
+  type: LoadBalancer
+
+---
+# Create Storjnode IngressRoute - TCP
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: storjnode-tcp-ingress
+  namespace: public
+  labels:
+    app.kubernetes.io/name: storjnode-tcp-ingress
+    app.kubernetes.io/part-of: storjnode
+spec:
+  entryPoints:
+    - storj-tcp
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: storjnode-service
+          port: storjnode-tcp
+---
+# Create Storjnode IngressRoute - UDP
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteUDP
+metadata:
+  name: storjnode-udp-ingress
+  namespace: public
+  labels:
+    app.kubernetes.io/name: storjnode-udp-ingress
+    app.kubernetes.io/part-of: storjnode
+spec:
+  entryPoints:
+    - storj-udp
+  routes:
+    - services:
+      - name: storjnode-service
+        port: storjnode-udp
+    # - services:
+    #   - name: storjnode-service
+    #     port: storjnode-udp
+---
+# Create Storjnode IngressRoute - HTTP
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: storjnode-http-ingress
+  namespace: public
+  labels:
+    app.kubernetes.io/name: storjnode-http-ingress
+    app.kubernetes.io/part-of: storjnode
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`storj.home.madeof.glass`)
+      kind: Rule
+      middlewares:
+      - name: secure-auth
+        namespace: public
+      services:
+        - name: storjnode-service
+          port: storjnode-http
+  tls:
+    certResolver: letsencrypt

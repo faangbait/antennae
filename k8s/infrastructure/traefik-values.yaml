@@ -32,6 +32,16 @@ ports:
   dht-udp:
     port: 51413
     protocol: UDP
+    expose: true
+  storj-tcp:
+    port: 28967
+    protocol: TCP
+    tls: 
+      enabled: false
+  storj-udp:
+    port: 28967
+    protocol: UDP
+    expose: true
 
 service:
   enabled: true

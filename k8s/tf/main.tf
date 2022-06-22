@@ -54,6 +54,9 @@ variable "routes" {
             "dashboard.public",
             "blog.public",
             "kb.public",
+            "registry.lab",
+            "storj.public",
+            "storj.home",
         ]
         prod = []
     }
