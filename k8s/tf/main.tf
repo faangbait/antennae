@@ -57,6 +57,7 @@ variable "routes" {
             "registry.lab",
             "storj.public",
             "storj.home",
+            "chia.lab",
         ]
         prod = []
     }

@@ -1,0 +1,121 @@
+# Create Chia Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chia
+  namespace: lab
+  labels:
+    app.kubernetes.io/name: chia
+    app.kubernetes.io/part-of: chia
+    app.kubernetes.io/release: stable
+  annotations:
+    a8r.io/description: ""
+    a8r.io/owner: "@chia-network"
+    a8r.io/repository: "https://github.com/Chia-Network/chia-docker"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chia-farm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chia-farm
+        app.kubernetes.io/part-of: chia
+    spec:
+      # securityContext:
+      #   runAsUser: 1000
+      #   runAsGroup: 1000
+      containers:
+      - name: chia-farm
+        image: ghcr.io/chia-network/chia:latest
+        env:
+          - name: TZ
+            value: "America/Chicago"
+          - name: upnp
+            value: "false"
+          - name: keys
+            value: /root/.chia/mnemonic
+        volumeMounts:
+        - mountPath: /root/.chia
+          name: cfg-chia
+          subPath: cfg/crypto/chia
+        - mountPath: /plots
+          name: bulk-chia
+          subPath: crypto/chia
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: "1"
+          limits:
+            memory: 2Gi
+            cpu: "2"
+        # livenessProbe:
+        #   exec:
+        #     command:
+        #     - /bin/sh
+        #     - -c
+        #     - '/usr/local/bin/docker-healthcheck.sh || exit 1'
+        #   initialDelaySeconds: 60
+        # readinessProbe:
+        #   exec:
+        #     command:
+        #     - /bin/sh
+        #     - -c
+        #     - '/usr/local/bin/docker-healthcheck.sh || exit 1'
+        #   initialDelaySeconds: 60
+        securityContext:
+          capabilities:
+            add: 
+              - SYS_TIME
+              - NET_ADMIN
+      volumes:
+        - name: cfg-chia
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_cfg
+            readOnly: false
+        - name: bulk-chia
+          glusterfs:
+            endpoints: glusterfs-cluster
+            path: glass_bulk
+            readOnly: false
+
+
+---
+# Create chia Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: chia-service
+  namespace: lab
+  labels:
+    app.kubernetes.io/name: chia-service
+    app.kubernetes.io/part-of: chia
+spec:
+  selector:
+    app.kubernetes.io/name: chia-farm
+  ports:
+    - port: 8444
+      name: chia-tcp
+  type: LoadBalancer
+---
+# Create chia IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: chia-ingress
+  namespace: lab
+  labels:
+    app.kubernetes.io/name: chia-ingress
+    app.kubernetes.io/part-of: chia
+spec:
+  entryPoints:
+    - chia-tcp
+  routes:
+    - match: Host(`chia.lab.madeof.glass`)
+      kind: Rule
+      services:
+        - name: chia-service
+          port: chia-tcp
+  tls: {}
