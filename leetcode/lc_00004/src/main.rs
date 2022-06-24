@@ -1,13 +1,7 @@
 
 pub struct Solution {}
 
-fn main() {
-    let sol = Solution::find_median_sorted_arrays;
-
-    assert_eq!(sol(vec![1,3], vec![2]), 2 as f64);
-    assert_eq!(sol(vec![1,2], vec![3,4]), 2.5 as f64);
-    
-}
+fn main() {}
 
 impl Solution {
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
@@ -22,5 +16,19 @@ impl Solution {
         } else {
             median
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn find_median_sorted_arrays() {
+        let sol = Solution::find_median_sorted_arrays;
+
+        assert_eq!(sol(vec![1,3], vec![2]), 2 as f64);
+        assert_eq!(sol(vec![1,2], vec![3,4]), 2.5 as f64);
     }
 }
