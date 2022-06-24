@@ -43,13 +43,21 @@ impl Solution {
     }
 }
 
-fn main() {
-    let sol = Solution::roman_to_int;
-    print!("III: {} [want: 3]\n", sol("III".to_string()));
-    print!("LVIII: {} [want: 58]\n", sol("LVIII".to_string()));
-    print!("MCMXCIV: {} [want: 1994]\n", sol("MCMXCIV".to_string()));
-    print!(
-        "MMCMXCVIII: {} [want: 2998]\n",
-        sol("MMCMXCVIII".to_string())
-    );
+fn main() {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn simple() {
+        assert_eq!(Solution::roman_to_int("III".to_string()), 3);
+        assert_eq!(Solution::roman_to_int("LVIII".to_string()), 58);
+    }
+
+    #[test]
+    pub fn complex() {
+        assert_eq!(Solution::roman_to_int("MCMXCIV".to_string()), 1994);
+        assert_eq!(Solution::roman_to_int("MMCMXCVIII".to_string()), 2998);
+    }
 }
